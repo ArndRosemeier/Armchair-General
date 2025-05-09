@@ -67,10 +67,11 @@ export class CountryGenerator {
       }
       countryMap.push(row);
     }
-    const frontiers: Array<{x: number, y: number, country: number}> = [];
+    // Use [x, y, country] arrays for frontiers
+    const frontiers: Array<[number, number, number]> = [];
     for (const seed of seeds) {
       countryMap[seed.y][seed.x] = seed.idx;
-      frontiers.push({x: seed.x, y: seed.y, country: seed.idx});
+      frontiers.push([seed.x, seed.y, seed.idx]);
     }
 
     // 4. Flood-fill competition with resistance
@@ -78,29 +79,34 @@ export class CountryGenerator {
     while (frontiers.length > 0) {
       // Randomly pick a frontier cell
       const i = Math.floor(rand() * frontiers.length);
-      const {x, y, country} = frontiers[i];
-      // Try to expand into random neighbor
-      const neighbors = dirs
-        .map(([dx,dy]) => ({nx: x+dx, ny: y+dy}))
-        .filter(({nx,ny}) => nx>=0 && nx<width && ny>=0 && ny<height && countryMap[ny][nx] === 0);
+      const [x, y, country] = frontiers[i];
+      // Try to expand into random neighbor (use [nx, ny] arrays)
+      const neighbors: [number, number][] = [];
+      for (let d = 0; d < 4; d++) {
+        const nx = x + dirs[d][0];
+        const ny = y + dirs[d][1];
+        if (nx >= 0 && nx < width && ny >= 0 && ny < height && countryMap[ny][nx] === 0) {
+          neighbors.push([nx, ny]);
+        }
+      }
       if (neighbors.length === 0) {
         // No more expansion possible from this cell
         frontiers.splice(i, 1);
         continue;
       }
       // Prefer lower resistance
-      neighbors.sort((a,b) => resistance[a.ny][a.nx] - resistance[b.ny][b.nx]);
+      neighbors.sort((a, b) => resistance[a[1]][a[0]] - resistance[b[1]][b[0]]);
       // With 70% probability, pick the lowest resistance, else pick randomly for irregularity
       let pickIdx = 0;
       if (neighbors.length > 1 && rand() > 0.7) pickIdx = Math.floor(rand() * neighbors.length);
-      const {nx, ny} = neighbors[pickIdx];
+      const [nx, ny] = neighbors[pickIdx];
       // Probabilistically skip high-resistance cells to create more jagged borders
       const res = resistance[ny][nx];
       // Use skipProbability for all cells above the midpoint resistance
       const resistanceMid = (minResistance + maxResistance) / 2;
       if (res > resistanceMid && rand() < skipProbability) continue;
       countryMap[ny][nx] = country;
-      frontiers.push({x: nx, y: ny, country});
+      frontiers.push([nx, ny, country]);
     }
 
     return countryMap;
