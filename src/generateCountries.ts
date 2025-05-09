@@ -76,6 +76,8 @@ export class CountryGenerator {
 
     // 4. Flood-fill competition with resistance
     const dirs = [[1,0],[0,1],[-1,0],[0,-1]];
+    // Calculate resistanceMid once before the loop
+    const resistanceMid = (minResistance + maxResistance) / 2;
     while (frontiers.length > 0) {
       // Randomly pick a frontier cell
       const i = Math.floor(rand() * frontiers.length);
@@ -99,11 +101,13 @@ export class CountryGenerator {
       // With 70% probability, pick the lowest resistance, else pick randomly for irregularity
       let pickIdx = 0;
       if (neighbors.length > 1 && rand() > 0.7) pickIdx = Math.floor(rand() * neighbors.length);
-      const [nx, ny] = neighbors[pickIdx];
+      // Assign neighbor coordinates to local variables
+      const neighbor = neighbors[pickIdx];
+      const nx = neighbor[0];
+      const ny = neighbor[1];
       // Probabilistically skip high-resistance cells to create more jagged borders
       const res = resistance[ny][nx];
       // Use skipProbability for all cells above the midpoint resistance
-      const resistanceMid = (minResistance + maxResistance) / 2;
       if (res > resistanceMid && rand() < skipProbability) continue;
       countryMap[ny][nx] = country;
       frontiers.push([nx, ny, country]);
