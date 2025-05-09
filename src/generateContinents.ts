@@ -82,7 +82,7 @@ export function removeInlandLakes(map: number[][], oceanValue: number, landValue
 
 export function generateDefaultContinentsMap(width: number, height: number): number[][] {
   return generateContinentsMap(width, height, {
-    scale: 0.18,
+    scale: 0.0018,
     threshold: -0.05,
     borderStrength: 0.5,
     borderWidth: 0.15,
