@@ -1,5 +1,6 @@
-import { WorldMap } from './WorldMap';
+import { WorldMap, OCEAN, LAND } from './WorldMap';
 import { Renderer } from './Renderer';
+import { removeInlandLakes, removeSmallIslands } from './generateContinents';
 
 function createTestGUI() {
   // Set up main container
@@ -109,7 +110,7 @@ function createTestGUI() {
   persistenceInput.min = '0.3';
   persistenceInput.max = '0.8';
   persistenceInput.step = '0.01';
-  persistenceInput.value = '0.65';
+  persistenceInput.value = '0.5';
   persistenceInput.style.margin = '0 8px';
   persistenceLabel.appendChild(persistenceInput);
   const persistenceValue = document.createElement('span');
@@ -139,6 +140,8 @@ function createTestGUI() {
   const canvasContainer = document.createElement('div');
   container.appendChild(canvasContainer);
 
+  let currentMapArray: number[][] | null = null;
+
   function createAndShowMap() {
     // Get screen width and set map size
     const width = Math.floor(window.innerWidth * 0.95);
@@ -159,6 +162,7 @@ function createTestGUI() {
     } else {
       mapArray = WorldMap.createMap(mapWidth, mapHeight);
     }
+    currentMapArray = mapArray;
     const worldMap = new WorldMap(mapWidth, mapHeight);
     // Replace map with our generated one
     (worldMap as any).map = mapArray;
@@ -167,6 +171,23 @@ function createTestGUI() {
     // Display with pan/zoom
     Renderer.displayWithPanZoom(worldMap, canvasContainer, width, height);
   }
+
+  // Button to remove inland lakes
+  const lakesButton = document.createElement('button');
+  lakesButton.textContent = 'Remove Inland Lakes';
+  lakesButton.style.margin = '8px';
+  lakesButton.onclick = function() {
+    if (!currentMapArray) return;
+    const newMap = removeInlandLakes(currentMapArray, OCEAN, LAND);
+    currentMapArray = newMap;
+    const width = currentMapArray[0].length;
+    const height = currentMapArray.length;
+    const worldMap = new WorldMap(width, height);
+    (worldMap as any).map = currentMapArray;
+    canvasContainer.innerHTML = '';
+    Renderer.displayWithPanZoom(worldMap, canvasContainer, width, height);
+  };
+
 
   button.onclick = createAndShowMap;
   toggle.onchange = createAndShowMap;

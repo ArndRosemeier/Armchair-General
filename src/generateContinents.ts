@@ -8,6 +8,90 @@ import { createNoise2D } from 'simplex-noise';
  * @param height Height of the map
  * @param options Optional: scale (zoom), threshold (land/ocean), seed
  */
+export function removeSmallIslands(map: number[][], oceanValue: number, landValue: number, minIslandSize: number = 1000): number[][] {
+  const height = map.length;
+  const width = map[0]?.length || 0;
+  const visited = Array.from({ length: height }, () => Array(width).fill(false));
+  const dirs = [[1,0], [-1,0], [0,1], [0,-1]];
+  const result = map.map(row => row.slice());
+
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      if (!visited[y][x] && map[y][x] === landValue) {
+        // BFS to collect island
+        const queue: [number, number][] = [[y, x]];
+        const island: [number, number][] = [[y, x]];
+        visited[y][x] = true;
+        while (queue.length) {
+          const [cy, cx] = queue.shift()!;
+          for (const [dy, dx] of dirs) {
+            const ny = cy + dy, nx = cx + dx;
+            if (ny >= 0 && ny < height && nx >= 0 && nx < width && !visited[ny][nx] && map[ny][nx] === landValue) {
+              visited[ny][nx] = true;
+              queue.push([ny, nx]);
+              island.push([ny, nx]);
+            }
+          }
+        }
+        // Remove small island
+        if (island.length < minIslandSize) {
+          for (const [iy, ix] of island) {
+            result[iy][ix] = oceanValue;
+          }
+        }
+      }
+    }
+  }
+  return result;
+}
+
+export function removeInlandLakes(map: number[][], oceanValue: number, landValue: number): number[][] {
+  const height = map.length;
+  const width = map[0]?.length || 0;
+  const visited = Array.from({ length: height }, () => Array(width).fill(false));
+  const queue: [number, number][] = [];
+
+  // Enqueue all edge ocean cells
+  for (let x = 0; x < width; x++) {
+    if (map[0][x] === oceanValue) { queue.push([0, x]); visited[0][x] = true; }
+    if (map[height-1][x] === oceanValue) { queue.push([height-1, x]); visited[height-1][x] = true; }
+  }
+  for (let y = 1; y < height-1; y++) {
+    if (map[y][0] === oceanValue) { queue.push([y, 0]); visited[y][0] = true; }
+    if (map[y][width-1] === oceanValue) { queue.push([y, width-1]); visited[y][width-1] = true; }
+  }
+
+  // Flood fill to mark all ocean-connected water
+  const dirs = [[1,0], [-1,0], [0,1], [0,-1]];
+  while (queue.length) {
+    const [y, x] = queue.shift()!;
+    for (const [dy, dx] of dirs) {
+      const ny = y + dy, nx = x + dx;
+      if (ny >= 0 && ny < height && nx >= 0 && nx < width && !visited[ny][nx] && map[ny][nx] === oceanValue) {
+        visited[ny][nx] = true;
+        queue.push([ny, nx]);
+      }
+    }
+  }
+
+  // Any ocean not visited is an inland lake; set to landValue
+  const result = map.map((row, y) => row.map((cell, x) => (cell === oceanValue && !visited[y][x]) ? landValue : cell));
+  return result;
+}
+
+
+export function generateDefaultContinentsMap(width: number, height: number): number[][] {
+  return generateContinentsMap(width, height, {
+    scale: 0.18,
+    threshold: -0.05,
+    borderStrength: 0.5,
+    borderWidth: 0.15,
+    octaves: 6,
+    persistence: 0.5,
+    seed: Math.floor(Math.random() * 1000000000)
+  });
+}
+
 export function generateContinentsMap(
   width: number,
   height: number,
@@ -31,7 +115,7 @@ export function generateContinentsMap(
   const noise2D = createNoise2D(rand);
   const borderStrength = options?.borderStrength ?? 0.5;
   const borderWidth = options?.borderWidth ?? 0.2;
-  const OCEAN_VALUE = -1; // Value representing pure ocean in noise
+  // Use OCEAN from WorldMap everywhere
 
   // Smoothstep function
   function smoothstep(edge0: number, edge1: number, x: number) {
@@ -70,13 +154,15 @@ export function generateContinentsMap(
       if (edgeDist < borderWidth) {
         // Blend toward ocean based on proximity to edge
         const mask = borderStrength * (1 - (edgeDist / borderWidth));
-        maskedValue = value * (1 - mask) + OCEAN_VALUE * mask;
+        maskedValue = value * (1 - mask) + OCEAN * mask;
       }
       row.push(maskedValue > threshold ? LAND : OCEAN);
     }
     map.push(row);
   }
-  return map;
+  let processed = removeInlandLakes(map, OCEAN, LAND);
+  processed = removeSmallIslands(processed, OCEAN, LAND, 1000);
+  return processed;
 }
 
 // Simple seeded random generator (mulberry32)
