@@ -12,7 +12,7 @@ export class CountryGenerator {
    *   - seed: random seed for reproducibility
    *   - borderWiggle: strength of border noise (default 0.5)
    */
-  static generateCountries(
+  static generateCountriesMap(
     continentMap: number[][],
     options?: {
       countryCount?: number;
@@ -55,7 +55,7 @@ export class CountryGenerator {
     for (let i = 0; i < countryCount && landCells.length > 0; i++) {
       const pick = Math.floor(rand() * landCells.length);
       const [y, x] = landCells.splice(pick, 1)[0];
-      seeds.push({ x, y, idx: i + 1 });
+      seeds.push({ x, y, idx: i }); // start at 0
     }
 
     // 3. Initialize country map and frontier queues
@@ -63,7 +63,7 @@ export class CountryGenerator {
     for (let y = 0; y < height; y++) {
       const row: number[] = [];
       for (let x = 0; x < width; x++) {
-        row.push(continentMap[y][x] === LAND ? 0 : continentMap[y][x]);
+        row.push(continentMap[y][x] === LAND ? LAND : continentMap[y][x]);
       }
       countryMap.push(row);
     }
@@ -87,7 +87,7 @@ export class CountryGenerator {
       for (let d = 0; d < 4; d++) {
         const nx = x + dirs[d][0];
         const ny = y + dirs[d][1];
-        if (nx >= 0 && nx < width && ny >= 0 && ny < height && countryMap[ny][nx] === 0) {
+        if (nx >= 0 && nx < width && ny >= 0 && ny < height && countryMap[ny][nx] === LAND) {
           neighbors.push([nx, ny]);
         }
       }
@@ -127,9 +127,78 @@ function mulberry32(a: number) {
   }
 }
 
+// New: Generate country map and extract Country instances
+import { Country } from './Country';
+import { Player } from './Player';
+
+export interface GenerateCountriesResult {
+  map: number[][];
+  countries: Country[];
+}
+
+export class CountryGeneratorExtended extends CountryGenerator {
+  /**
+   * Generates a filled country map and extracts Country instances with coordinates, border, and oceanBorder.
+   */
+  static generateCountries(
+    continentMap: number[][],
+    options?: {
+      countryCount?: number;
+      scale?: number;
+      seed?: number;
+      minResistance?: number;
+      maxResistance?: number;
+      skipProbability?: number;
+    }
+  ): GenerateCountriesResult {
+    const map = this.generateCountriesMap(continentMap, options);
+    const height = map.length;
+    const width = map[0]?.length || 0;
+    const countryMap: { [id: number]: Country } = {};
+
+    // 1. Collect coordinates for each country
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const id = map[y][x];
+        if (id >= 0) { // 0 and up are valid country IDs
+          if (!countryMap[id]) {
+            countryMap[id] = new Country(`Country ${id}`);
+          }
+          countryMap[id].coordinates.push([x, y]);
+        }
+      }
+    }
+
+    // 2. Collect border and ocean border for each country
+    const dirs = [[1,0],[0,1],[-1,0],[0,-1]];
+    for (const idStr in countryMap) {
+      const id = Number(idStr);
+      const country = countryMap[id];
+      for (const [x, y] of country.coordinates) {
+        let isBorder = false;
+        let isOceanBorder = false;
+        for (const [dx, dy] of dirs) {
+          const nx = x + dx;
+          const ny = y + dy;
+          if (nx < 0 || nx >= width || ny < 0 || ny >= height || map[ny][nx] !== id) {
+            isBorder = true;
+            if (nx < 0 || nx >= width || ny < 0 || ny >= height || map[ny][nx] === OCEAN) {
+              isOceanBorder = true;
+            }
+          }
+        }
+        if (isBorder) country.border.push([x, y]);
+        if (isOceanBorder) country.oceanBorder.push([x, y]);
+      }
+    }
+
+    return { map, countries: Object.values(countryMap) };
+  }
+}
+
 // Generate countries with strong resistance defaults for highly irregular borders
 export function generateDefaultCountries(continentMap: number[][], countryCount: number): number[][] {
-  return CountryGenerator.generateCountries(continentMap, {
+  return CountryGenerator.generateCountriesMap(continentMap, {
     countryCount,
     minResistance: 0,
     maxResistance: 130,
