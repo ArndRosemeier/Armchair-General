@@ -1,5 +1,12 @@
 import { createNoise2D } from 'simplex-noise';
 import { OCEAN, LAND } from './WorldMap';
+import { Country } from './Country';
+import { Player } from './Player';
+
+export interface GenerateCountriesResult {
+  map: number[][];
+  countries: Country[];
+}
 
 export class CountryGenerator {
   /**
@@ -14,23 +21,26 @@ export class CountryGenerator {
    */
   static generateCountriesMap(
     continentMap: number[][],
-    options?: {
+    options: {
       countryCount?: number;
       scale?: number; // Used for resistance map
       seed?: number;
       minResistance?: number;
       maxResistance?: number;
       skipProbability?: number;
-    }
+    } = {}
   ): number[][] {
+    if (!continentMap || continentMap.length === 0 || !continentMap[0]) {
+      throw new Error("continentMap must be a non-empty 2D array");
+    }
     const height = continentMap.length;
-    const width = continentMap[0]?.length || 0;
-    const countryCount = options?.countryCount ?? 12;
-    const scale = options?.scale ?? 0.09; // Higher scale = more granular resistance
-    const minResistance = options?.minResistance ?? 10.0;
-    const maxResistance = options?.maxResistance ?? 50.0;
-    const skipProbability = options?.skipProbability ?? 0.9;
-    const rand = options?.seed !== undefined ? mulberry32(options.seed) : Math.random;
+    const width = continentMap[0].length;
+    const countryCount = options.countryCount ?? 12;
+    const scale = options.scale ?? 0.09; // Higher scale = more granular resistance
+    const minResistance = options.minResistance ?? 10.0;
+    const maxResistance = options.maxResistance ?? 50.0;
+    const skipProbability = options.skipProbability ?? 0.9;
+    const rand = options.seed !== undefined ? mulberry32(options.seed) : Math.random;
     const noise2D = createNoise2D(rand);
 
     // 1. Generate resistance map (higher = harder to claim)
@@ -59,46 +69,26 @@ export class CountryGenerator {
     }
 
     // 3. Initialize country map and frontier queues
-    const countryMap: number[][] = [];
-    for (let y = 0; y < height; y++) {
-      const row: number[] = [];
-      for (let x = 0; x < width; x++) {
-        row.push(continentMap[y][x] === LAND ? LAND : continentMap[y][x]);
-      }
-      countryMap.push(row);
+    const countryMap: number[][] = Array.from({ length: height }, () => Array(width).fill(LAND));
+    for (const { x, y, idx } of seeds) {
+      countryMap[y][x] = idx;
     }
-    // Use [x, y, country] arrays for frontiers
-    const frontiers: Array<[number, number, number]> = [];
-    for (const seed of seeds) {
-      countryMap[seed.y][seed.x] = seed.idx;
-      frontiers.push([seed.x, seed.y, seed.idx]);
-    }
+    const frontiers: [number, number, number][] = seeds.map(({ x, y, idx }) => [x, y, idx]);
 
-    // 4. Flood-fill competition with resistance
-    const dirs = [[1,0],[0,1],[-1,0],[0,-1]];
-    // Calculate resistanceMid once before the loop
+    // 4. Grow countries
     const resistanceMid = (minResistance + maxResistance) / 2;
     while (frontiers.length > 0) {
-      // Randomly pick a frontier cell
       const i = Math.floor(rand() * frontiers.length);
-      const [x, y, country] = frontiers[i];
-      // Try to expand into random neighbor (use [nx, ny] arrays)
+      const [x, y, country] = frontiers.splice(i, 1)[0];
       const neighbors: [number, number][] = [];
-      for (let d = 0; d < 4; d++) {
-        const nx = x + dirs[d][0];
-        const ny = y + dirs[d][1];
-        if (nx >= 0 && nx < width && ny >= 0 && ny < height && countryMap[ny][nx] === LAND) {
+      for (const [dx, dy] of [[1,0],[0,1],[-1,0],[0,-1]]) {
+        const nx = x + dx;
+        const ny = y + dy;
+        if (nx >= 0 && nx < width && ny >= 0 && ny < height && countryMap[ny][nx] === LAND && continentMap[ny][nx] === LAND) {
           neighbors.push([nx, ny]);
         }
       }
-      if (neighbors.length === 0) {
-        // No more expansion possible from this cell
-        frontiers.splice(i, 1);
-        continue;
-      }
-      // Prefer lower resistance
-      neighbors.sort((a, b) => resistance[a[1]][a[0]] - resistance[b[1]][b[0]]);
-      // With 70% probability, pick the lowest resistance, else pick randomly for irregularity
+      if (neighbors.length === 0) continue;
       let pickIdx = 0;
       if (neighbors.length > 1 && rand() > 0.7) pickIdx = Math.floor(rand() * neighbors.length);
       // Assign neighbor coordinates to local variables
@@ -115,32 +105,11 @@ export class CountryGenerator {
 
     return countryMap;
   }
-}
 
-// Simple seeded random generator (mulberry32)
-function mulberry32(a: number) {
-  return function() {
-    let t = a += 0x6D2B79F5;
-    t = Math.imul(t ^ t >>> 15, t | 1);
-    t ^= t + Math.imul(t ^ t >>> 7, t | 61);
-    return ((t ^ t >>> 14) >>> 0) / 4294967296;
-  }
-}
-
-// New: Generate country map and extract Country instances
-import { Country } from './Country';
-import { Player } from './Player';
-
-export interface GenerateCountriesResult {
-  map: number[][];
-  countries: Country[];
-}
-
-export class CountryGeneratorExtended extends CountryGenerator {
   /**
    * Generates a filled country map and extracts Country instances with coordinates, border, and oceanBorder.
    */
-  static generateCountries(
+  static generateCountriesInternal(
     continentMap: number[][],
     options?: {
       countryCount?: number;
@@ -152,8 +121,11 @@ export class CountryGeneratorExtended extends CountryGenerator {
     }
   ): GenerateCountriesResult {
     const map = this.generateCountriesMap(continentMap, options);
+    if (!map || map.length === 0 || !map[0]) {
+      throw new Error("map must be a non-empty 2D array");
+    }
     const height = map.length;
-    const width = map[0]?.length || 0;
+    const width = map[0].length;
     const countryMap: { [id: number]: Country } = {};
 
     // 1. Collect coordinates for each country
@@ -170,6 +142,21 @@ export class CountryGeneratorExtended extends CountryGenerator {
     }
 
     // 2. Collect border and ocean border for each country
+    this.findCountryBorders(map, countryMap, width, height);
+
+    return { map, countries: Object.values(countryMap) };
+  }
+
+  /**
+   * Finds the border and ocean border cells for each country in the countryMap.
+   * Updates each Country instance's border and oceanBorder arrays in place.
+   */
+  private static findCountryBorders(
+    map: number[][],
+    countryMap: { [id: number]: Country },
+    width: number,
+    height: number
+  ): void {
     const dirs = [[1,0],[0,1],[-1,0],[0,-1]];
     for (const idStr in countryMap) {
       const id = Number(idStr);
@@ -191,12 +178,124 @@ export class CountryGeneratorExtended extends CountryGenerator {
         if (isOceanBorder) country.oceanBorder.push([x, y]);
       }
     }
+  }
 
-    return { map, countries: Object.values(countryMap) };
+
+  /**
+   * Finds and sets neighbors for each country in the array based on border adjacency.
+   * @param countries Array of Country instances (without names)
+   */
+  static findNeighbors(countries: Country[]): void {
+
+    // Map each border coordinate to its country
+    const coordToCountry: Map<string, Country> = new Map();
+    for (const country of countries) {
+      for (const [x, y] of country.border) {
+        coordToCountry.set(`${x},${y}`, country);
+      }
+    }
+    // For each country, collect unique neighbors
+    for (const country of countries) {
+      const neighborSet: Set<Country> = new Set();
+      for (const [x, y] of country.border) {
+        for (const [dx, dy] of [[1,0],[0,1],[-1,0],[0,-1]]) {
+          const nx = x + dx;
+          const ny = y + dy;
+          const neighbor = coordToCountry.get(`${nx},${ny}`);
+          if (neighbor && neighbor !== country) {
+            neighborSet.add(neighbor);
+          }
+        }
+      }
+      country.neighbors = Array.from(neighborSet);
+    }
+  }
+  /**
+   * Merges countries smaller than minSize into their smallest neighbor.
+   * @param countries Array of Country instances
+   * @param minSize Minimum size threshold (default 1000)
+   */
+  static mergeSmallCountries(countries: Country[], minSize: number = 1000): void {
+    let changed = true;
+    while (changed) {
+      changed = false;
+      for (let i = countries.length - 1; i >= 0; i--) {
+        const country = countries[i];
+        if (country.coordinates.length < minSize && country.neighbors.length > 0) {
+          // Find the smallest neighbor by coordinates.length
+          let smallestNeighbor = country.neighbors[0];
+          for (const neighbor of country.neighbors) {
+            if (neighbor.coordinates.length < smallestNeighbor.coordinates.length) {
+              smallestNeighbor = neighbor;
+            }
+          }
+          // Merge this country into smallestNeighbor
+          smallestNeighbor.coordinates.push(...country.coordinates);
+          // Remove the merged country from the countries array
+          countries.splice(i, 1);
+          changed = true;
+        }
+      }
+      // After any merge, update neighbors
+      if (changed) {
+        this.findNeighbors(countries);
+      }
+    }
+  }
+  /**
+   * Full pipeline for generating countries: initial generation, neighbor finding, merging, and border adjustment.
+   */
+  static generateCountries(
+    continentMap: number[][],
+    options: {
+      countryCount?: number;
+      scale?: number;
+      seed?: number;
+      minResistance?: number;
+      maxResistance?: number;
+      skipProbability?: number;
+      minCountrySize?: number;
+    } = {}
+  ): GenerateCountriesResult {
+    // 1. Initial generation
+    const { map, countries } = this.generateCountriesInternal(continentMap, options);
+
+    // 2. Initial neighbors
+    this.findNeighbors(countries);
+
+    // 3. Merge small countries
+    const minSize = options?.minCountrySize ?? 1000;
+    this.mergeSmallCountries(countries, minSize);
+
+    // 4. Recompute borders after merge
+    // Build a countryMap for border finding
+    if (!map || map.length === 0 || !map[0]) {
+      throw new Error("map must be a non-empty 2D array");
+    }
+    const width = map[0].length;
+    const height = map.length;
+    const countryMap: { [id: number]: Country } = {};
+    for (let i = 0; i < countries.length; i++) {
+      countryMap[i] = countries[i];
+    }
+    this.findCountryBorders(map, countryMap, width, height);
+
+    // 5. Recompute neighbors after merge
+    this.findNeighbors(countries);
+
+    return { map, countries };
   }
 }
 
-// Generate countries with strong resistance defaults for highly irregular borders
+function mulberry32(a: number) {
+  return function() {
+    let t = a += 0x6D2B79F5;
+    t = Math.imul(t ^ t >>> 15, t | 1);
+    t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  }
+}
+
 export function generateDefaultCountries(continentMap: number[][], countryCount: number): number[][] {
   return CountryGenerator.generateCountriesMap(continentMap, {
     countryCount,
