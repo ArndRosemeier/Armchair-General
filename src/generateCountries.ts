@@ -174,17 +174,19 @@ export class CountryGenerator {
         const id = map[y][x];
         if (id >= 0) { // 0 and up are valid country IDs
           if (!countryMap[id]) {
-            countryMap[id] = new Country(`Country ${id}`);
+            const country = new Country(`Country ${id}`);
+            (country as any).id = id; // Attach id property for robust border detection
+            countryMap[id] = country;
           }
           countryMap[id].coordinates.push([x, y]);
         }
       }
     }
-
+    const countries: Country[] = Object.values(countryMap);
     // 2. Collect border and ocean border for each country
-    this.findCountryBorders(map, countryMap, width, height);
+    this.findCountryBorders(map, countries, width, height);
 
-    return { map, countries: Object.values(countryMap) };
+    return { map, countries };
   }
 
   /**
@@ -198,8 +200,8 @@ export class CountryGenerator {
     height: number
   ): void {
     const dirs = [[1,0],[0,1],[-1,0],[0,-1]];
-    for (let id = 0; id < countries.length; id++) {
-      const country = countries[id];
+    for (const country of countries) {
+      const id = (country as any).id;
       country.border = [];
       country.oceanBorder = [];
       for (const [x, y] of country.coordinates) {
