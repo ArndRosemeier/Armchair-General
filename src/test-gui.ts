@@ -1,7 +1,7 @@
 import { WorldMap, OCEAN, LAND } from './WorldMap';
 import { Renderer } from './Renderer';
 import { removeInlandLakes, removeSmallIslands, generateDefaultContinentsMap } from './generateContinents';
-import { CountryGenerator } from './generateCountries';
+import { CountryGenerator, generateDefaultCountries } from './generateCountries';
 
 function createTestGUI() {
   // Set up main container
@@ -110,19 +110,9 @@ function createTestGUI() {
 
   countryButton.onclick = function() {
     if (!currentMapArray) return;
-    // Read resistance parameters
-    const countryCount = parseInt(countryCountInput.value, 10);
-    const minResistance = parseFloat(minResInput.value);
-    const maxResistance = parseFloat(maxResInput.value);
-    const skipProbability = parseFloat(skipProbInput.value);
-    // Generate countries on the current map
-    const countryMap = CountryGenerator.generateCountriesMap(currentMapArray, {
-      countryCount,
-      minResistance,
-      maxResistance,
-      skipProbability
-    });
-    currentMapArray = countryMap;
+    // Always use 40 as the country count and default values for all other parameters
+    const countryMap = generateDefaultCountries(currentMapArray, 40);
+    // Do not overwrite currentMapArray, so repeated clicks use the original land/sea map
     const width = countryMap[0].length;
     const height = countryMap.length;
     const worldMap = new WorldMap(width, height);

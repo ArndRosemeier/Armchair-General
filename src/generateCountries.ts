@@ -59,21 +59,27 @@ export class CountryGenerator {
     const landCells: [number, number][] = [];
     for (let y = 0; y < height; y++) {
       for (let x = 0; x < width; x++) {
-        if (continentMap[y][x] === LAND) landCells.push([y, x]);
+        if (continentMap[y][x] === LAND) landCells.push([x, y]); // [x, y] order
       }
     }
     for (let i = 0; i < countryCount && landCells.length > 0; i++) {
       const pick = Math.floor(rand() * landCells.length);
-      const [y, x] = landCells.splice(pick, 1)[0];
-      seeds.push({ x, y, idx: i }); // start at 0
+      const [x, y] = landCells.splice(pick, 1)[0]; // [x, y] order
+      seeds.push({ x, y, idx: i });
     }
 
-    // 3. Initialize country map and frontier queues
-    const countryMap: number[][] = Array.from({ length: height }, () => Array(width).fill(LAND));
-    for (const { x, y, idx } of seeds) {
-      countryMap[y][x] = idx;
+    // 3. Fill the given continentMap in-place with country indices for LAND, preserving OCEAN as is
+    // First, set all LAND cells to LAND (reset), OCEAN cells remain untouched
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        if (continentMap[y][x] !== OCEAN) continentMap[y][x] = LAND;
+      }
     }
-    const frontiers: [number, number, number][] = seeds.map(({ x, y, idx }) => [x, y, idx]);
+    // Place seeds
+    for (const { x, y, idx } of seeds) {
+      continentMap[y][x] = idx; // [x, y] order
+    }
+    const frontiers: [number, number, number][] = seeds.map(({ x, y, idx }) => [x, y, idx]); // [x, y, idx] order
 
     // 4. Grow countries
     const resistanceMid = (minResistance + maxResistance) / 2;
@@ -84,26 +90,21 @@ export class CountryGenerator {
       for (const [dx, dy] of [[1,0],[0,1],[-1,0],[0,-1]]) {
         const nx = x + dx;
         const ny = y + dy;
-        if (nx >= 0 && nx < width && ny >= 0 && ny < height && countryMap[ny][nx] === LAND && continentMap[ny][nx] === LAND) {
+        if (nx >= 0 && nx < width && ny >= 0 && ny < height && continentMap[ny][nx] === LAND) {
           neighbors.push([nx, ny]);
         }
       }
       if (neighbors.length === 0) continue;
-      let pickIdx = 0;
-      if (neighbors.length > 1 && rand() > 0.7) pickIdx = Math.floor(rand() * neighbors.length);
-      // Assign neighbor coordinates to local variables
-      const neighbor = neighbors[pickIdx];
-      const nx = neighbor[0];
-      const ny = neighbor[1];
-      // Probabilistically skip high-resistance cells to create more jagged borders
-      const res = resistance[ny][nx];
-      // Use skipProbability for all cells above the midpoint resistance
-      if (res > resistanceMid && rand() < skipProbability) continue;
-      countryMap[ny][nx] = country;
-      frontiers.push([nx, ny, country]);
+      for (const [nx, ny] of neighbors) {
+        // Probabilistically skip high-resistance cells to create more jagged borders (optional)
+        const res = resistance[ny][nx];
+        if (res > resistanceMid && rand() < skipProbability) continue;
+        continentMap[ny][nx] = country;
+        frontiers.push([nx, ny, country]);
+      }
     }
 
-    return countryMap;
+    return continentMap;
   }
 
   /**
@@ -297,10 +298,11 @@ function mulberry32(a: number) {
 }
 
 export function generateDefaultCountries(continentMap: number[][], countryCount: number): number[][] {
-  return CountryGenerator.generateCountriesMap(continentMap, {
+  // Use generateCountries and return only the map property
+  return CountryGenerator.generateCountries(continentMap, {
     countryCount,
     minResistance: 0,
     maxResistance: 130,
-    skipProbability: 0.99
-  });
+    skipProbability: 0.02
+  }).map;
 }
