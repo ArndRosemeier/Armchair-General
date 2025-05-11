@@ -33,10 +33,22 @@ export class GameGui {
     return this.worldMapCanvas;
   }
 
+  private _onResize = () => {
+    this.markMapDirty();
+    if (this.rootContainer) {
+      this.renderMainGui(this.rootContainer, this.currentGame);
+    }
+  };
+
   async mount(container: HTMLElement) {
     this.rootContainer = container;
+    window.addEventListener('resize', this._onResize);
     // Render the main GUI with a placeholder (no game yet)
     this.renderMainGui(container, this.currentGame);
+  }
+
+  unmount() {
+    window.removeEventListener('resize', this._onResize);
   }
 
   async startNewGame() {
@@ -107,6 +119,10 @@ export class GameGui {
       mapCanvas = this.getWorldMapCanvas();
     }
     if (mapCanvas) {
+      mapCanvas.style.width = '100%';
+      mapCanvas.style.height = '100%';
+      mapCanvas.style.objectFit = 'contain';
+      mapCanvas.style.display = 'block';
       mapArea.appendChild(mapCanvas);
     } else {
       const mapPlaceholder = document.createElement('div');
