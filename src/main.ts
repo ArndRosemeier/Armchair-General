@@ -1,10 +1,11 @@
-import { createTestGUI } from './test-gui';
+import { GameGui } from './GameGui';
 
 const app = document.getElementById('app');
 
 if (app) {
   app.innerHTML = '';
-  createTestGUI();
+  const gui = new GameGui();
+  gui.mount(app);
 } else {
   throw new Error('No app element found in index.html');
 }
