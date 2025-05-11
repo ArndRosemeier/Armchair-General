@@ -72,7 +72,7 @@ export class GameGui {
         0,
         p.isAI
       ));
-      this.currentGame = new GameMod.Game(result.map, playerObjs);
+      this.currentGame = GameMod.Game.initNewGame(result.map, playerObjs);
       this.markMapDirty();
       this.getWorldMapCanvas(); // Render and cache the map after game start
       this.renderMainGui(container, this.currentGame);

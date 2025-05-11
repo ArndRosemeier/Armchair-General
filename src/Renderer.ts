@@ -11,6 +11,7 @@ export class Renderer {
   static render(worldMap: WorldMap): HTMLCanvasElement {
     const map = worldMap.getMap();
     const countries = worldMap.getCountries?.() || [];
+    // Log all home country names
     const height = map.length;
     const width = map[0].length;
     const canvas = document.createElement('canvas');
@@ -37,11 +38,14 @@ export class Renderer {
     // Draw country borders using the border property
     if (Renderer.drawBorders) {
       for (const country of countries) {
+        // Determine border color: black for home country, white otherwise
+        const isHome = country.owner && country.owner.homeCountry === country;
+        const borderColor = isHome ? [0, 0, 0] : [255, 255, 255];
         for (const [x, y] of country.border || []) {
           const idx = (y * width + x) * 4;
-          data[idx] = 255;
-          data[idx + 1] = 255;
-          data[idx + 2] = 255;
+          data[idx] = borderColor[0];
+          data[idx + 1] = borderColor[1];
+          data[idx + 2] = borderColor[2];
           data[idx + 3] = 255;
         }
       }

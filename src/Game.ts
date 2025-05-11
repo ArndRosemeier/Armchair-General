@@ -81,78 +81,49 @@ export class Game {
       country.owner = null;
     }
 
-    // 3. Select candidate home countries
+    // New logic: Try 10 random assignments, maximize min distance
+    let bestMinDist = -1;
+    let bestSet: Country[] = [];
     const playerCount = players.length;
-    const candidateCount = playerCount * 3;
-    const shuffled = countries.slice().sort(() => Math.random() - 0.5);
-    const candidates = shuffled.slice(0, candidateCount);
-
-    // Helper: Euclidean distance between country centers
+    const attempts = 10;
     function dist(a: Country, b: Country): number {
+      // Use Euclidean distance between centers
+      if (!a.center || !b.center) return 0;
       const [ax, ay] = a.center();
       const [bx, by] = b.center();
       return Math.sqrt((ax - bx) ** 2 + (ay - by) ** 2);
     }
-
-    // Find the set of playerCount countries with maximal minimal pairwise distance
-    let bestSet: Country[] = [];
-    let bestMinDist = -1;
-    // Try all combinations if small, else greedy
-    if (candidateCount <= 10) {
-      // Brute force all combinations
-      function* combinations(arr: Country[], k: number): Generator<Country[]> {
-        if (k === 0) yield [];
-        else for (let i = 0; i <= arr.length - k; ++i)
-          for (const tail of combinations(arr.slice(i + 1), k))
-            yield [arr[i], ...tail];
+    for (let attempt = 0; attempt < attempts; ++attempt) {
+      // Shuffle countries and pick first N as home countries
+      const shuffled = [...countries];
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
       }
-      for (const combo of combinations(candidates, playerCount)) {
-        let minDist = Infinity;
-        for (let i = 0; i < combo.length; ++i) {
-          for (let j = i + 1; j < combo.length; ++j) {
-            minDist = Math.min(minDist, dist(combo[i], combo[j]));
-          }
-        }
-        if (minDist > bestMinDist) {
-          bestMinDist = minDist;
-          bestSet = combo;
+      const candidateSet = shuffled.slice(0, playerCount);
+      // Compute smallest pairwise distance
+      let minDist = Infinity;
+      for (let i = 0; i < candidateSet.length; ++i) {
+        for (let j = i + 1; j < candidateSet.length; ++j) {
+          minDist = Math.min(minDist, dist(candidateSet[i], candidateSet[j]));
         }
       }
-    } else {
-      // Greedy farthest-point algorithm
-      bestSet = [candidates[0]];
-      while (bestSet.length < playerCount) {
-        let farthest: Country | null = null;
-        let farthestDist = -1;
-        for (const cand of candidates) {
-          if (bestSet.includes(cand)) continue;
-          const minDist = Math.min(...bestSet.map(c => dist(c, cand)));
-          if (minDist > farthestDist) {
-            farthestDist = minDist;
-            farthest = cand;
-          }
-        }
-        if (farthest) bestSet.push(farthest);
-        else break;
+      if (minDist > bestMinDist) {
+        bestMinDist = minDist;
+        bestSet = candidateSet;
       }
     }
-
-    // Assign home countries to players
+    // Assign chosen home countries
     for (let i = 0; i < players.length; ++i) {
-      const home = bestSet[i % bestSet.length];
+      const home = bestSet[i];
       players[i].homeCountry = home;
       home.owner = players[i];
       players[i].ownedCountries.push(home);
+      home.income = Game.homeCountryIncome;
+      home.fortified = true;
     }
-
-    // Set all home countries' income to homeCountryIncome
-    for (const player of players) {
-      if (player.homeCountry) {
-        player.homeCountry.income = Game.homeCountryIncome;
-        player.homeCountry.fortified = true;
-      }
-    }
-
+    // Log home country assignments
+    console.log('Assigned home countries:', players.map(p => `${p.name}: ${p.homeCountry ? p.homeCountry.name : 'none'}`));
     return new Game(worldMap, players);
   }
 }
