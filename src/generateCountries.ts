@@ -193,14 +193,13 @@ export class CountryGenerator {
    */
   private static findCountryBorders(
     map: number[][],
-    countryMap: { [id: number]: Country },
+    countries: Country[],
     width: number,
     height: number
   ): void {
     const dirs = [[1,0],[0,1],[-1,0],[0,-1]];
-    for (const idStr in countryMap) {
-      const id = Number(idStr);
-      const country = countryMap[id];
+    for (let id = 0; id < countries.length; id++) {
+      const country = countries[id];
       country.border = [];
       country.oceanBorder = [];
       for (const [x, y] of country.coordinates) {
@@ -310,17 +309,12 @@ export class CountryGenerator {
     this.mergeSmallCountries(countries, minSize);
 
     // 4. Recompute borders after merge
-    // Build a countryMap for border finding
     if (!map || map.length === 0 || !map[0]) {
       throw new Error("map must be a non-empty 2D array");
     }
     const width = map[0].length;
     const height = map.length;
-    const countryMap: { [id: number]: Country } = {};
-    for (let i = 0; i < countries.length; i++) {
-      countryMap[i] = countries[i];
-    }
-    this.findCountryBorders(map, countryMap, width, height);
+    this.findCountryBorders(map, countries, width, height);
 
     // 5. Recompute neighbors after merge
     this.findNeighbors(countries);
@@ -344,6 +338,6 @@ export function generateDefaultCountries(continentMap: number[][], countryCount:
     countryCount,
     minResistance: 0,
     maxResistance: 130,
-    skipProbability: 0.02
+    skipProbability: 0.00
   });
 }

@@ -3,10 +3,26 @@ import { Renderer } from './Renderer';
 import { removeInlandLakes, removeSmallIslands, generateDefaultContinentsMap } from './generateContinents';
 import { CountryGenerator, generateDefaultCountries } from './generateCountries';
 
-function createTestGUI() {
+export function createTestGUI() {
   // Set up main container
   const container = document.getElementById('app') || document.body;
   container.innerHTML = '';
+
+  // Border toggle checkbox
+  const borderToggle = document.createElement('label');
+  borderToggle.style.display = 'block';
+  const borderCheckbox = document.createElement('input');
+  borderCheckbox.type = 'checkbox';
+  borderCheckbox.checked = true;
+  borderCheckbox.style.marginRight = '0.5em';
+  borderToggle.appendChild(borderCheckbox);
+  borderToggle.appendChild(document.createTextNode('Show Country Borders'));
+  container.appendChild(borderToggle);
+
+  // Title
+  const title = document.createElement('h2');
+  title.textContent = 'Test Map Generator';
+  container.appendChild(title);
 
   // Map type toggle
   const toggleLabel = document.createElement('label');
@@ -17,7 +33,6 @@ function createTestGUI() {
   toggle.style.margin = '8px';
   toggleLabel.prepend(toggle);
   container.appendChild(toggleLabel);
-
 
   // Width and height controls
   const sizeDiv = document.createElement('div');
@@ -75,16 +90,31 @@ function createTestGUI() {
   const canvasContainer = document.createElement('div');
   container.appendChild(canvasContainer);
 
+  let currentWorldMap: WorldMap | null = null;
+
   function createAndShowMap() {
     // Read width, height, and country count from input fields
     const width = parseInt(widthInput.value, 10) || 1280;
     const height = parseInt(heightInput.value, 10) || 800;
     const countryCount = parseInt(countryCountInput.value, 10) || 40;
     // Use WorldMap.createMap to generate a full world map
-    const worldMap = WorldMap.createMap(width, height, countryCount);
+    currentWorldMap = WorldMap.createMap(width, height, countryCount);
     canvasContainer.innerHTML = '';
-    Renderer.displayWithPanZoom(worldMap, canvasContainer, width, height);
+    Renderer.displayWithPanZoom(currentWorldMap, canvasContainer, width, height);
   }
+
+  function redrawMap() {
+    if (currentWorldMap) {
+      canvasContainer.innerHTML = '';
+      Renderer.displayWithPanZoom(currentWorldMap, canvasContainer, parseInt(widthInput.value, 10) || 1280, parseInt(heightInput.value, 10) || 800);
+    }
+  }
+
+  // Border checkbox event: toggle borders and redraw
+  borderCheckbox.addEventListener('change', () => {
+    Renderer.drawBorders = borderCheckbox.checked;
+    redrawMap();
+  });
 
   button.onclick = createAndShowMap;
   createAndShowMap();
