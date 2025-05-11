@@ -72,6 +72,9 @@ export class GameGui {
   renderMainGui(_container: HTMLElement, game: any) {
     // Defensive check removed: trust rootContainer is always set
     const container = this.rootContainer;
+    if (!container) {
+      throw new Error("rootContainer is not set (null) in renderMainGui");
+    }
     container.innerHTML = '';
     // Main wrapper
     const wrapper = document.createElement('div');
