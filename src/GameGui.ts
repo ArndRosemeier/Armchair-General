@@ -17,28 +17,33 @@ export class GameGui {
     // Always use the root container for the dialog
     const container = this.rootContainer!;
     const { showNewGameDialog } = await import('./NewGameDialog');
-    const result = await showNewGameDialog(container);
-    // Dynamically import Player and Game modules
-    const PlayerMod = await import('./Player');
-    const GameMod = await import('./Game');
-    // Use Player.COLORS or fallback
-    const defaultColors = ['#4fc3f7','#81c784','#ffb74d','#e57373','#ba68c8','#ffd54f','#64b5f6','#a1887f'];
-    const colorArr = PlayerMod.Player.COLORS ?? defaultColors;
-    const playerObjs = result.players.map((p, i) => new PlayerMod.Player(
-      p.name,
-      colorArr[i % colorArr.length],
-      [],
-      null,
-      [],
-      0,
-      p.isAI
-    ));
-    this.currentGame = new GameMod.Game(result.map, playerObjs);
-    this.renderMainGui(container, this.currentGame);
+    try {
+      const result = await showNewGameDialog(container);
+      // Dynamically import Player and Game modules
+      const PlayerMod = await import('./Player');
+      const GameMod = await import('./Game');
+      // Use Player.COLORS or fallback
+      const defaultColors = ['#4fc3f7','#81c784','#ffb74d','#e57373','#ba68c8','#ffd54f','#64b5f6','#a1887f'];
+      const colorArr = PlayerMod.Player.COLORS ?? defaultColors;
+      const playerObjs = result.players.map((p, i) => new PlayerMod.Player(
+        p.name,
+        colorArr[i % colorArr.length],
+        [],
+        null,
+        [],
+        0,
+        p.isAI
+      ));
+      this.currentGame = new GameMod.Game(result.map, playerObjs);
+      this.renderMainGui(container, this.currentGame);
+    } catch (err) {
+      console.error('NewGameDialog error or cancellation:', err);
+    }
   }
 
   renderMainGui(_container: HTMLElement, game: any) {
-    const container = this.rootContainer!;
+    // Defensive check removed: trust rootContainer is always set
+    const container = this.rootContainer;
     container.innerHTML = '';
     // Main wrapper
     const wrapper = document.createElement('div');
@@ -126,20 +131,7 @@ export class GameGui {
       colorDot.style.width = '16px';
       colorDot.style.height = '16px';
       colorDot.style.borderRadius = '50%';
-      colorDot.style.background = player.color;
-      colorDot.style.marginRight = '8px';
-      li.appendChild(colorDot);
-      const nameSpan = document.createElement('span');
-      nameSpan.textContent = player.name + (player.isAI ? ' (AI)' : '');
-      nameSpan.style.flex = '1';
-      li.appendChild(nameSpan);
-      const moneySpan = document.createElement('span');
-      moneySpan.textContent = `💰 ${player.money}`;
-      moneySpan.style.marginLeft = '8px';
-      li.appendChild(moneySpan);
-      playerList.appendChild(li);
     }
-    sidebar.appendChild(playerList);
 
     // Action buttons
     const actionsDiv = document.createElement('div');
@@ -148,7 +140,6 @@ export class GameGui {
     actionsDiv.style.gap = '12px';
     actionsDiv.style.marginTop = 'auto';
 
-    // New Game button (now in sidebar)
     const newGameBtn = document.createElement('button');
     newGameBtn.textContent = 'New Game';
     newGameBtn.style.padding = '12px 0';
