@@ -101,37 +101,56 @@ export class GameGui {
     const turnInfo = document.createElement('div');
     turnInfo.style.fontSize = '1.2rem';
     turnInfo.style.fontWeight = 'bold';
-    turnInfo.textContent = 'Turn: 1 | Player: Alice (You)';
+    if (game && game.players && game.players.length > 0) {
+      const activePlayer = game.activePlayer;
+      turnInfo.textContent = `Turn: ${game.gameTurn} | Player: ${activePlayer.name}`;
+    } else {
+      turnInfo.textContent = 'No game loaded. Start a new game to play!';
+    }
     gameInfo.appendChild(turnInfo);
     sidebar.appendChild(gameInfo);
 
-    // Player list
-    const playerListTitle = document.createElement('div');
-    playerListTitle.textContent = 'Players';
-    playerListTitle.style.fontWeight = 'bold';
-    playerListTitle.style.marginBottom = '8px';
-    sidebar.appendChild(playerListTitle);
+    // Player list (only after game is started)
+    if (game && game.players && game.players.length > 0) {
+      const playerListTitle = document.createElement('div');
+      playerListTitle.textContent = 'Players';
+      playerListTitle.style.fontWeight = 'bold';
+      playerListTitle.style.marginBottom = '8px';
+      sidebar.appendChild(playerListTitle);
 
-    const playerList = document.createElement('ul');
-    playerList.style.listStyle = 'none';
-    playerList.style.padding = '0';
-    playerList.style.margin = '0 0 24px 0';
-    const players = [
-      { name: 'Alice', color: '#4fc3f7', isAI: false, money: 20 },
-      { name: 'Bob', color: '#81c784', isAI: true, money: 15 },
-      { name: 'Carol', color: '#ffb74d', isAI: true, money: 18 },
-    ];
-    for (const player of players) {
-      const li = document.createElement('li');
-      li.style.display = 'flex';
-      li.style.alignItems = 'center';
-      li.style.marginBottom = '8px';
-      const colorDot = document.createElement('span');
-      colorDot.style.display = 'inline-block';
-      colorDot.style.width = '16px';
-      colorDot.style.height = '16px';
-      colorDot.style.borderRadius = '50%';
+      const playerList = document.createElement('ul');
+      playerList.style.listStyle = 'none';
+      playerList.style.padding = '0';
+      playerList.style.margin = '0 0 24px 0';
+      for (const player of game.players) {
+        const li = document.createElement('li');
+        li.style.display = 'flex';
+        li.style.alignItems = 'center';
+        li.style.marginBottom = '8px';
+        const colorDot = document.createElement('span');
+        colorDot.style.display = 'inline-block';
+        colorDot.style.width = '16px';
+        colorDot.style.height = '16px';
+        colorDot.style.borderRadius = '50%';
+        colorDot.style.background = player.color;
+        colorDot.style.marginRight = '8px';
+        li.appendChild(colorDot);
+        const nameSpan = document.createElement('span');
+        nameSpan.textContent = player.name + (player.isAI ? ' (AI)' : '');
+        nameSpan.style.flex = '1';
+        li.appendChild(nameSpan);
+        // If player has a money property, show it
+        if (typeof player.money === 'number') {
+          const moneySpan = document.createElement('span');
+          moneySpan.textContent = `💰 ${player.money}`;
+          moneySpan.style.marginLeft = '8px';
+          li.appendChild(moneySpan);
+        }
+        playerList.appendChild(li);
+      }
+      sidebar.appendChild(playerList);
     }
+
 
     // Action buttons
     const actionsDiv = document.createElement('div');
