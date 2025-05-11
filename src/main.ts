@@ -1,4 +1,4 @@
-import { GameGui } from './Game';
+import { GameGui } from './GameGui';
 
 const app = document.getElementById('app');
 

@@ -91,5 +91,5 @@ function createTestGUI() {
 
 }
 
-// Run the GUI setup on load
-document.addEventListener('DOMContentLoaded', createTestGUI);
+// Test GUI disabled: GameGui is now the default GUI.
+// document.addEventListener('DOMContentLoaded', createTestGUI);

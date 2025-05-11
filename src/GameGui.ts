@@ -6,9 +6,152 @@ export class GameGui {
   }
 
   mount(container: HTMLElement) {
-    const title = document.createElement('h1');
-    title.textContent = 'Game App';
-    container.appendChild(title);
-    // Add more rendering logic here
+    container.innerHTML = '';
+    // Main wrapper
+    const wrapper = document.createElement('div');
+    wrapper.style.display = 'flex';
+    wrapper.style.flexDirection = 'row';
+    wrapper.style.height = '90vh';
+    wrapper.style.background = 'linear-gradient(120deg, #232526 0%, #414345 100%)';
+    wrapper.style.borderRadius = '16px';
+    wrapper.style.boxShadow = '0 4px 24px rgba(0,0,0,0.25)';
+    wrapper.style.overflow = 'hidden';
+    wrapper.style.margin = '32px auto';
+    wrapper.style.maxWidth = '1200px';
+
+    // Left: Map area
+    const mapArea = document.createElement('div');
+    mapArea.style.flex = '3';
+    mapArea.style.background = '#222';
+    mapArea.style.display = 'flex';
+    mapArea.style.alignItems = 'center';
+    mapArea.style.justifyContent = 'center';
+    mapArea.style.position = 'relative';
+    mapArea.style.borderRight = '2px solid #333';
+    // Placeholder for map
+    const mapPlaceholder = document.createElement('div');
+    mapPlaceholder.style.width = '600px';
+    mapPlaceholder.style.height = '600px';
+    mapPlaceholder.style.background = 'repeating-linear-gradient(135deg,#444 0 10px,#333 10px 20px)';
+    mapPlaceholder.style.border = '4px solid #666';
+    mapPlaceholder.style.borderRadius = '12px';
+    mapPlaceholder.style.display = 'flex';
+    mapPlaceholder.style.alignItems = 'center';
+    mapPlaceholder.style.justifyContent = 'center';
+    mapPlaceholder.style.color = '#bbb';
+    mapPlaceholder.style.fontSize = '2rem';
+    mapPlaceholder.textContent = 'World Map';
+    mapArea.appendChild(mapPlaceholder);
+
+    // Right: Sidebar
+    const sidebar = document.createElement('div');
+    sidebar.style.flex = '1';
+    sidebar.style.background = 'rgba(30,32,34,0.98)';
+    sidebar.style.display = 'flex';
+    sidebar.style.flexDirection = 'column';
+    sidebar.style.padding = '32px 24px';
+    sidebar.style.color = '#fff';
+    sidebar.style.minWidth = '320px';
+
+    // Game Info
+    const gameInfo = document.createElement('div');
+    gameInfo.style.marginBottom = '32px';
+    const turnInfo = document.createElement('div');
+    turnInfo.style.fontSize = '1.2rem';
+    turnInfo.style.fontWeight = 'bold';
+    turnInfo.textContent = 'Turn: 1 | Player: Alice (You)';
+    gameInfo.appendChild(turnInfo);
+    sidebar.appendChild(gameInfo);
+
+    // Player list
+    const playerListTitle = document.createElement('div');
+    playerListTitle.textContent = 'Players';
+    playerListTitle.style.fontWeight = 'bold';
+    playerListTitle.style.marginBottom = '8px';
+    sidebar.appendChild(playerListTitle);
+
+    const playerList = document.createElement('ul');
+    playerList.style.listStyle = 'none';
+    playerList.style.padding = '0';
+    playerList.style.margin = '0 0 24px 0';
+    const players = [
+      { name: 'Alice', color: '#4fc3f7', isAI: false, money: 20 },
+      { name: 'Bob', color: '#81c784', isAI: true, money: 15 },
+      { name: 'Carol', color: '#ffb74d', isAI: true, money: 18 },
+    ];
+    for (const player of players) {
+      const li = document.createElement('li');
+      li.style.display = 'flex';
+      li.style.alignItems = 'center';
+      li.style.marginBottom = '8px';
+      const colorDot = document.createElement('span');
+      colorDot.style.display = 'inline-block';
+      colorDot.style.width = '16px';
+      colorDot.style.height = '16px';
+      colorDot.style.borderRadius = '50%';
+      colorDot.style.background = player.color;
+      colorDot.style.marginRight = '8px';
+      li.appendChild(colorDot);
+      const nameSpan = document.createElement('span');
+      nameSpan.textContent = player.name + (player.isAI ? ' (AI)' : '');
+      nameSpan.style.flex = '1';
+      li.appendChild(nameSpan);
+      const moneySpan = document.createElement('span');
+      moneySpan.textContent = `💰 ${player.money}`;
+      moneySpan.style.marginLeft = '8px';
+      li.appendChild(moneySpan);
+      playerList.appendChild(li);
+    }
+    sidebar.appendChild(playerList);
+
+    // Action buttons
+    const actionsDiv = document.createElement('div');
+    actionsDiv.style.display = 'flex';
+    actionsDiv.style.flexDirection = 'column';
+    actionsDiv.style.gap = '12px';
+    actionsDiv.style.marginTop = 'auto';
+
+    const endTurnBtn = document.createElement('button');
+    endTurnBtn.textContent = 'End Turn';
+    endTurnBtn.style.padding = '12px 0';
+    endTurnBtn.style.fontSize = '1.1rem';
+    endTurnBtn.style.background = 'linear-gradient(90deg,#43cea2 0%,#185a9d 100%)';
+    endTurnBtn.style.color = '#fff';
+    endTurnBtn.style.border = 'none';
+    endTurnBtn.style.borderRadius = '8px';
+    endTurnBtn.style.cursor = 'pointer';
+    endTurnBtn.style.boxShadow = '0 2px 8px rgba(30,32,34,0.13)';
+    actionsDiv.appendChild(endTurnBtn);
+
+    const spyBtn = document.createElement('button');
+    spyBtn.textContent = 'Spy on Country';
+    spyBtn.style.padding = '12px 0';
+    spyBtn.style.fontSize = '1.1rem';
+    spyBtn.style.background = 'linear-gradient(90deg,#ff9966 0%,#ff5e62 100%)';
+    spyBtn.style.color = '#fff';
+    spyBtn.style.border = 'none';
+    spyBtn.style.borderRadius = '8px';
+    spyBtn.style.cursor = 'pointer';
+    spyBtn.style.boxShadow = '0 2px 8px rgba(30,32,34,0.13)';
+    actionsDiv.appendChild(spyBtn);
+
+    const attackBtn = document.createElement('button');
+    attackBtn.textContent = 'Attack Country';
+    attackBtn.style.padding = '12px 0';
+    attackBtn.style.fontSize = '1.1rem';
+    attackBtn.style.background = 'linear-gradient(90deg,#f7971e 0%,#ffd200 100%)';
+    attackBtn.style.color = '#222';
+    attackBtn.style.border = 'none';
+    attackBtn.style.borderRadius = '8px';
+    attackBtn.style.cursor = 'pointer';
+    attackBtn.style.boxShadow = '0 2px 8px rgba(30,32,34,0.13)';
+    actionsDiv.appendChild(attackBtn);
+
+    sidebar.appendChild(actionsDiv);
+
+    // Assemble
+    wrapper.appendChild(mapArea);
+    wrapper.appendChild(sidebar);
+    container.appendChild(wrapper);
   }
 }
