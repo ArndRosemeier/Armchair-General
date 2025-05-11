@@ -109,7 +109,39 @@ export function showNewGameDialog(container: HTMLElement): Promise<NewGameDialog
     // Recreate map button
     const recreateBtn = document.createElement('button');
     recreateBtn.textContent = 'Recreate Map';
-    recreateBtn.onclick = generateAndShowMap;
+    // Track the latest requested map generation
+    let mapGenerationToken = 0;
+    let currentWorker: Worker | null = null;
+    recreateBtn.onclick = () => {
+      mapGenerationToken++;
+      if (currentWorker) {
+        currentWorker.terminate();
+      }
+      currentWorker = new Worker(new URL('./mapWorker.ts', import.meta.url), { type: 'module' });
+      spinner.style.display = 'block';
+      if (mapCanvas) mapPreviewDiv.removeChild(mapCanvas);
+      const thisToken = mapGenerationToken;
+      currentWorker.onmessage = (event: MessageEvent) => {
+        if (thisToken !== mapGenerationToken) return;
+        const { map, countries } = event.data.result;
+        // Reconstruct WorldMap from plain data
+        const worldMap = Object.assign(Object.create(Object.getPrototypeOf({})), {
+          getMap: () => map,
+          getCountries: () => countries,
+        });
+        currentMap = worldMap as any;
+        mapCanvas = Renderer.render(currentMap);
+        mapCanvas.style.width = '300px';
+        mapCanvas.style.height = '200px';
+        mapCanvas.style.objectFit = 'cover';
+        mapCanvas.style.display = 'block';
+        spinner.style.display = 'none';
+        mapPreviewDiv.appendChild(mapCanvas);
+        currentWorker?.terminate();
+        currentWorker = null;
+      };
+      currentWorker.postMessage({ type: 'generate', width: 1200, height: 800, countryCount: 40 });
+    };
     recreateBtn.style.margin = '0 0 0 0';
     recreateBtn.style.padding = '10px 20px';
     recreateBtn.style.background = 'linear-gradient(90deg,#43cea2 0%,#185a9d 100%)';
@@ -138,19 +170,8 @@ export function showNewGameDialog(container: HTMLElement): Promise<NewGameDialog
     // Map state
     let currentMap: WorldMap | null = null;
     let mapCanvas: HTMLCanvasElement | null = null;
-    async function generateAndShowMap() {
-      spinner.style.display = 'block';
-      if (mapCanvas) mapPreviewDiv.removeChild(mapCanvas);
-      // Generate a 1200x800 map
-      currentMap = await Promise.resolve(WorldMap.createMap(1200, 800, 40));
-      mapCanvas = Renderer.render(currentMap);
-      mapCanvas.style.width = '300px'; // scale to fit preview box
-      mapCanvas.style.height = '200px';
-      mapCanvas.style.objectFit = 'cover'; // ensure no distortion
-      mapCanvas.style.display = 'block';
-      spinner.style.display = 'none';
-      mapPreviewDiv.appendChild(mapCanvas);
-    }
+    // No longer needed; replaced by worker logic above
+    // async function generateAndShowMap(token: number) { ... }
 
 
     // Player list state
