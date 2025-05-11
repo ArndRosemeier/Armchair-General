@@ -56,15 +56,15 @@ export class Renderer {
     for (const country of countries) {
       if (!country.name) continue;
       const [cx, cy] = country.center ? country.center() : [0, 0];
-      // Log center coordinates
-      console.log(`Country: ${country.name}, Center: [${cx}, ${cy}], Coordinates count: ${country.coordinates ? country.coordinates.length : 0}`);
+      // Prefix with tower icon if fortified
+      const displayName = country.fortified ? '🛡️ ' + country.name : country.name;
       // Draw black outline for contrast
       ctx.lineWidth = 3;
       ctx.strokeStyle = 'black';
-      ctx.strokeText(country.name, cx, cy);
+      ctx.strokeText(displayName, cx, cy);
       // Draw white text
       ctx.fillStyle = 'white';
-      ctx.fillText(country.name, cx, cy);
+      ctx.fillText(displayName, cx, cy);
     }
     ctx.restore();
     return canvas;
