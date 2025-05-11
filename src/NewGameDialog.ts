@@ -219,18 +219,24 @@ export function showNewGameDialog(container: HTMLElement): Promise<NewGameDialog
         nameSpan.style.flex = '1';
         nameSpan.style.cursor = 'pointer';
         nameSpan.style.fontWeight = 'bold';
-        nameSpan.style.fontSize = '1.05rem';
-        nameSpan.style.padding = '2px 0';
-        nameSpan.title = 'Click to edit name';
 
-        nameSpan.onclick = () => {
-          // Prevent multiple inputs
-          if (li.querySelector('input')) return;
-          const input = document.createElement('input');
-          input.type = 'text';
-          input.value = p.name;
-          input.style.flex = '1';
-          input.style.fontWeight = 'bold';
+    nameSpan.onclick = () => {
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.value = p.name;
+      input.style.flex = '1';
+      input.style.fontWeight = 'bold';
+      input.style.fontSize = '1.05rem';
+      input.style.background = 'rgba(60,70,80,0.18)';
+      input.style.color = '#fff';
+      input.style.border = 'none';
+      input.style.borderBottom = '2px solid #43cea2';
+      input.style.outline = 'none';
+      input.style.padding = '2px 0';
+      input.style.margin = '0';
+      input.style.borderRadius = '0';
+      input.style.transition = 'border-color 0.2s';
+      input.autofocus = true;
           input.style.fontSize = '1.05rem';
           input.style.background = 'rgba(60,70,80,0.18)';
           input.style.color = '#fff';
@@ -376,7 +382,8 @@ export function showNewGameDialog(container: HTMLElement): Promise<NewGameDialog
     actionRow.appendChild(startBtn);
 
     function updateStartBtn() {
-      startBtn.disabled = players.length < 2 || !currentMap;
+      // Defensive disabling removed: always enable start button
+    startBtn.disabled = false;
     }
 
     startBtn.onclick = () => {
