@@ -1,4 +1,5 @@
 import { Country } from './Country';
+import { Strategy } from './Strategy';
 
 export interface CountryKnowledge {
   country: Country;
@@ -17,6 +18,10 @@ export class Player {
    * Whether this player is an AI (true) or a human (false)
    */
   isAI: boolean;
+  /**
+   * The AI strategy for this player, if AI. Undefined for human players.
+   */
+  ai?: Strategy;
   /**
    * Player's available money.
    */
