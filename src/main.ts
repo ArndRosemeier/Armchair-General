@@ -1,9 +1,9 @@
-import { Game } from './Game';
+import { GameGui } from './Game';
 
 const app = document.getElementById('app');
 
 if (app) {
-  const game = new Game();
+  const game = new GameGui();
   app.innerHTML = '';
   game.mount(app);
 } else {

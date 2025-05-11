@@ -1,14 +1,37 @@
-export class Game {
-  private state: string;
+import { WorldMap } from './WorldMap';
+import { Player } from './Player';
 
-  constructor() {
-    this.state = 'initialized';
+/**
+ * Core game logic class for RiskTs.
+ * Manages players, world map, turns, and active player.
+ */
+export class Game {
+  worldMap: WorldMap;
+  players: Player[];
+  gameTurn: number;
+  activePlayerIndex: number;
+
+  constructor(worldMap: WorldMap, players: Player[] = []) {
+    this.worldMap = worldMap;
+    this.players = players;
+    this.gameTurn = 1;
+    this.activePlayerIndex = 0;
   }
 
-  mount(container: HTMLElement) {
-    const title = document.createElement('h1');
-    title.textContent = 'Game App';
-    container.appendChild(title);
-    // Add more rendering logic here
+  /**
+   * Returns the currently active player.
+   */
+  get activePlayer(): Player {
+    return this.players[this.activePlayerIndex];
+  }
+
+  /**
+   * Advances the game to the next player's turn, incrementing gameTurn if needed.
+   */
+  nextTurn() {
+    this.activePlayerIndex = (this.activePlayerIndex + 1) % this.players.length;
+    if (this.activePlayerIndex === 0) {
+      this.gameTurn++;
+    }
   }
 }

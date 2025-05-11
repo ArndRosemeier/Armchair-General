@@ -13,6 +13,10 @@ export class Player {
   ownedCountries: Country[];
   homeCountry: Country | null;
   /**
+   * Whether this player is an AI (true) or a human (false)
+   */
+  isAI: boolean;
+  /**
    * Player's available money.
    */
   money: number;
@@ -28,7 +32,8 @@ export class Player {
     ownedCountries: Country[] = [],
     homeCountry: Country | null = null,
     knowledge: CountryKnowledge[] = [],
-    money: number = 0
+    money: number = 0,
+    isAI: boolean = false
   ) {
     this.name = name;
     this.color = color;
@@ -36,6 +41,7 @@ export class Player {
     this.homeCountry = homeCountry;
     this.knowledge = knowledge;
     this.money = money;
+    this.isAI = isAI;
   }
 }
 
