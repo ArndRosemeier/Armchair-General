@@ -151,7 +151,7 @@ export function showNewGameDialog(container: HTMLElement): Promise<NewGameDialog
       spinner.style.display = 'none';
       mapPreviewDiv.appendChild(mapCanvas);
     }
-    generateAndShowMap();
+
 
     // Player list state
     let players: PlayerConfig[] = [];
