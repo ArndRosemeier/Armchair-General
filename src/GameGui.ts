@@ -54,13 +54,17 @@ export class GameGui {
     const wrapper = document.createElement('div');
     wrapper.style.display = 'flex';
     wrapper.style.flexDirection = 'row';
-    wrapper.style.height = '90vh';
+    wrapper.style.position = 'fixed';
+    wrapper.style.top = '0';
+    wrapper.style.left = '0';
+    wrapper.style.width = '100vw';
+    wrapper.style.height = '100vh';
     wrapper.style.background = 'linear-gradient(120deg, #232526 0%, #414345 100%)';
-    wrapper.style.borderRadius = '16px';
-    wrapper.style.boxShadow = '0 4px 24px rgba(0,0,0,0.25)';
+    wrapper.style.borderRadius = '0';
+    wrapper.style.boxShadow = 'none';
     wrapper.style.overflow = 'hidden';
-    wrapper.style.margin = '32px auto';
-    wrapper.style.maxWidth = '1200px';
+    wrapper.style.margin = '0';
+    wrapper.style.maxWidth = '100vw';
 
     // Left: Map area
     const mapArea = document.createElement('div');
@@ -73,8 +77,8 @@ export class GameGui {
     mapArea.style.borderRight = '2px solid #333';
     // Placeholder for map
     const mapPlaceholder = document.createElement('div');
-    mapPlaceholder.style.width = '600px';
-    mapPlaceholder.style.height = '600px';
+    mapPlaceholder.style.width = '100%';
+    mapPlaceholder.style.height = '100%';
     mapPlaceholder.style.background = 'repeating-linear-gradient(135deg,#444 0 10px,#333 10px 20px)';
     mapPlaceholder.style.border = '4px solid #666';
     mapPlaceholder.style.borderRadius = '12px';
