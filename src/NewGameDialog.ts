@@ -1,5 +1,6 @@
 import { WorldMap } from './WorldMap';
 import { Renderer } from './Renderer';
+import { Country } from './Country';
 
 export type PlayerConfig = { name: string; isAI: boolean };
 
@@ -128,12 +129,25 @@ export function showNewGameDialog(container: HTMLElement): Promise<NewGameDialog
       currentWorker.onmessage = (event: MessageEvent) => {
         if (thisToken !== mapGenerationToken) return;
         const { map, countries } = event.data.result;
+        // Reconstruct countries as real Country instances
+        const reconstructedCountries = countries.map((c: any) => {
+          const country = new Country(c.name, c.owner, c.armies, c.income);
+          country.coordinates = c.coordinates;
+          country.border = c.border;
+          country.oceanBorder = c.oceanBorder;
+          country.neighbors = c.neighbors;
+          country.color = c.color;
+          return country;
+        });
         // Reconstruct WorldMap from plain data
         const worldMap = Object.assign(Object.create(Object.getPrototypeOf({})), {
           getMap: () => map,
-          getCountries: () => countries,
+          getCountries: () => reconstructedCountries,
         });
         currentMap = worldMap as any;
+        if (!currentMap) {
+          throw new Error('WorldMap is null when rendering map preview.');
+        }
         mapCanvas = Renderer.render(currentMap);
         mapCanvas.style.width = '300px';
         mapCanvas.style.height = '200px';

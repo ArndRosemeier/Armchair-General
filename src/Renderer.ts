@@ -47,6 +47,26 @@ export class Renderer {
       }
     }
     ctx.putImageData(imgData, 0, 0);
+
+    // Draw country names at their centers
+    ctx.save();
+    ctx.font = 'bold 10px Verdana, Geneva, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    for (const country of countries) {
+      if (!country.name) continue;
+      const [cx, cy] = country.center ? country.center() : [0, 0];
+      // Log center coordinates
+      console.log(`Country: ${country.name}, Center: [${cx}, ${cy}], Coordinates count: ${country.coordinates ? country.coordinates.length : 0}`);
+      // Draw black outline for contrast
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = 'black';
+      ctx.strokeText(country.name, cx, cy);
+      // Draw white text
+      ctx.fillStyle = 'white';
+      ctx.fillText(country.name, cx, cy);
+    }
+    ctx.restore();
     return canvas;
   }
 
