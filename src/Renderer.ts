@@ -38,15 +38,35 @@ export class Renderer {
     // Draw country borders using the border property
     if (Renderer.drawBorders) {
       for (const country of countries) {
-        // Determine border color: black for home country, white otherwise
+        // Determine border color: bright orange for home country, black otherwise
         const isHome = country.owner && country.owner.homeCountry === country;
-        const borderColor = isHome ? [0, 0, 0] : [255, 255, 255];
+        const borderColor = isHome ? [255, 140, 0] : [0, 0, 0];
         for (const [x, y] of country.border || []) {
-          const idx = (y * width + x) * 4;
-          data[idx] = borderColor[0];
-          data[idx + 1] = borderColor[1];
-          data[idx + 2] = borderColor[2];
-          data[idx + 3] = 255;
+          if (isHome) {
+            // For home countries, draw a 3x3 square centered at (x, y)
+            for (let dy = -1; dy <= 1; dy++) {
+              for (let dx = -1; dx <= 1; dx++) {
+                const nx = x + dx;
+                const ny = y + dy;
+                if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
+                  const nidx = (ny * width + nx) * 4;
+                  data[nidx] = borderColor[0];
+                  data[nidx + 1] = borderColor[1];
+                  data[nidx + 2] = borderColor[2];
+                  data[nidx + 3] = 255;
+                }
+              }
+            }
+          } else {
+            // For non-home countries, draw a single pixel
+            if (x >= 0 && x < width && y >= 0 && y < height) {
+              const idx = (y * width + x) * 4;
+              data[idx] = borderColor[0];
+              data[idx + 1] = borderColor[1];
+              data[idx + 2] = borderColor[2];
+              data[idx + 3] = 255;
+            }
+          }
         }
       }
     }
