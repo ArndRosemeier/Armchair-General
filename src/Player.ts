@@ -8,6 +8,7 @@ export interface CountryKnowledge {
 }
 
 export class Player {
+  static COLORS = ["red", "blue", "green", "yellow"];
   name: string;
   color: string;
   ownedCountries: Country[];
