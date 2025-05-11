@@ -213,9 +213,56 @@ export function showNewGameDialog(container: HTMLElement): Promise<NewGameDialog
         li.style.padding = '6px 10px';
         li.style.boxShadow = '0 1px 4px rgba(30,32,34,0.09)';
         // Player name and AI badge
+        // Inline editable player name
         const nameSpan = document.createElement('span');
         nameSpan.textContent = `${p.name}`;
         nameSpan.style.flex = '1';
+        nameSpan.style.cursor = 'pointer';
+        nameSpan.style.fontWeight = 'bold';
+        nameSpan.style.fontSize = '1.05rem';
+        nameSpan.style.padding = '2px 0';
+        nameSpan.title = 'Click to edit name';
+
+        nameSpan.onclick = () => {
+          // Prevent multiple inputs
+          if (li.querySelector('input')) return;
+          const input = document.createElement('input');
+          input.type = 'text';
+          input.value = p.name;
+          input.style.flex = '1';
+          input.style.fontWeight = 'bold';
+          input.style.fontSize = '1.05rem';
+          input.style.background = 'rgba(60,70,80,0.18)';
+          input.style.color = '#fff';
+          input.style.border = 'none';
+          input.style.borderBottom = '2px solid #43cea2';
+          input.style.outline = 'none';
+          input.style.padding = '2px 0';
+          input.style.margin = '0';
+          input.style.borderRadius = '0';
+          input.style.transition = 'border-color 0.2s';
+          input.autofocus = true;
+
+          // Replace span with input
+          li.replaceChild(input, nameSpan);
+          input.focus();
+          input.select();
+
+          // Save on blur or Enter
+          function save() {
+            const newName = input.value.trim() || p.name;
+            p.name = newName;
+            updatePlayerList();
+          }
+          input.addEventListener('blur', save);
+          input.addEventListener('keydown', e => {
+            if (e.key === 'Enter') {
+              input.blur();
+            } else if (e.key === 'Escape') {
+              updatePlayerList();
+            }
+          });
+        };
         li.appendChild(nameSpan);
         if (p.isAI) {
           const aiBadge = document.createElement('span');
