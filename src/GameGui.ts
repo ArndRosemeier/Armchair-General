@@ -5,7 +5,50 @@ export class GameGui {
     this.state = 'initialized';
   }
 
-  mount(container: HTMLElement) {
+  private currentGame: any = null;
+
+  async mount(container: HTMLElement) {
+    // Add New Game button
+    const newGameBtn = document.createElement('button');
+    newGameBtn.textContent = 'New Game';
+    newGameBtn.style.margin = '8px';
+    newGameBtn.onclick = () => {
+      this.startNewGame(container);
+    };
+    container.appendChild(newGameBtn);
+
+    // Render the main GUI with a placeholder (no game yet)
+    this.renderMainGui(container, this.currentGame);
+  }
+
+  async startNewGame(container: HTMLElement) {
+    // Import and show the new game dialog
+    const { showNewGameDialog } = await import('./NewGameDialog');
+    try {
+      const result = await showNewGameDialog(container);
+      // Dynamically import Player and Game modules
+      const PlayerMod = await import('./Player');
+      const GameMod = await import('./Game');
+      // Use Player.COLORS or fallback
+      const defaultColors = ['#4fc3f7','#81c784','#ffb74d','#e57373','#ba68c8','#ffd54f','#64b5f6','#a1887f'];
+      const colorArr = PlayerMod.Player.COLORS ?? defaultColors;
+      const playerObjs = result.players.map((p, i) => new PlayerMod.Player(
+        p.name,
+        colorArr[i % colorArr.length],
+        [],
+        null,
+        [],
+        0,
+        p.isAI
+      ));
+      this.currentGame = new GameMod.Game(result.map, playerObjs);
+      this.renderMainGui(container, this.currentGame);
+    } catch {
+      // Dialog was cancelled - optionally handle
+    }
+  }
+
+  renderMainGui(container: HTMLElement, game: any) {
     container.innerHTML = '';
     // Main wrapper
     const wrapper = document.createElement('div');
@@ -110,6 +153,23 @@ export class GameGui {
     actionsDiv.style.flexDirection = 'column';
     actionsDiv.style.gap = '12px';
     actionsDiv.style.marginTop = 'auto';
+
+    // New Game button (now in sidebar)
+    const newGameBtn = document.createElement('button');
+    newGameBtn.textContent = 'New Game';
+    newGameBtn.style.padding = '12px 0';
+    newGameBtn.style.fontSize = '1.1rem';
+    newGameBtn.style.background = 'linear-gradient(90deg,#00c3ff 0%,#ffff1c 100%)';
+    newGameBtn.style.color = '#222';
+    newGameBtn.style.border = 'none';
+    newGameBtn.style.borderRadius = '8px';
+    newGameBtn.style.cursor = 'pointer';
+    newGameBtn.style.boxShadow = '0 2px 8px rgba(30,32,34,0.13)';
+    newGameBtn.style.marginBottom = '8px';
+    newGameBtn.onclick = () => {
+      this.startNewGame(container);
+    };
+    actionsDiv.appendChild(newGameBtn);
 
     const endTurnBtn = document.createElement('button');
     endTurnBtn.textContent = 'End Turn';
