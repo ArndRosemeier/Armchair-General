@@ -1,10 +1,36 @@
+import { Renderer } from './Renderer';
+
 export class GameGui {
   private state: string;
   private currentGame: any = null;
   private rootContainer: HTMLElement | null = null;
 
+  // Cached rendered world map
+  private worldMapCanvas: HTMLCanvasElement | null = null;
+  private mapDirty: boolean = true;
+
   constructor() {
     this.state = 'initialized';
+  }
+
+  /**
+   * Mark the cached world map as dirty (needs re-render).
+   */
+  markMapDirty() {
+    this.mapDirty = true;
+  }
+
+  /**
+   * Get the cached or newly rendered world map canvas.
+   * If dirty, re-render using Renderer and cache.
+   */
+  getWorldMapCanvas(): HTMLCanvasElement | null {
+    if (!this.currentGame || !this.currentGame.worldMap) return null;
+    if (this.mapDirty || !this.worldMapCanvas) {
+      this.worldMapCanvas = Renderer.render(this.currentGame.worldMap);
+      this.mapDirty = false;
+    }
+    return this.worldMapCanvas;
   }
 
   async mount(container: HTMLElement) {
@@ -35,6 +61,8 @@ export class GameGui {
         p.isAI
       ));
       this.currentGame = new GameMod.Game(result.map, playerObjs);
+      this.markMapDirty();
+      this.getWorldMapCanvas(); // Render and cache the map after game start
       this.renderMainGui(container, this.currentGame);
     } catch (err) {
       console.error('NewGameDialog error or cancellation:', err);
@@ -70,20 +98,28 @@ export class GameGui {
     mapArea.style.justifyContent = 'center';
     mapArea.style.position = 'relative';
     mapArea.style.borderRight = '2px solid #333';
-    // Placeholder for map
-    const mapPlaceholder = document.createElement('div');
-    mapPlaceholder.style.width = '100%';
-    mapPlaceholder.style.height = '100%';
-    mapPlaceholder.style.background = 'repeating-linear-gradient(135deg,#444 0 10px,#333 10px 20px)';
-    mapPlaceholder.style.border = '4px solid #666';
-    mapPlaceholder.style.borderRadius = '12px';
-    mapPlaceholder.style.display = 'flex';
-    mapPlaceholder.style.alignItems = 'center';
-    mapPlaceholder.style.justifyContent = 'center';
-    mapPlaceholder.style.color = '#bbb';
-    mapPlaceholder.style.fontSize = '2rem';
-    mapPlaceholder.textContent = 'World Map';
-    mapArea.appendChild(mapPlaceholder);
+    // Rendered map or placeholder
+    let mapCanvas = null;
+    if (game && game.worldMap) {
+      mapCanvas = this.getWorldMapCanvas();
+    }
+    if (mapCanvas) {
+      mapArea.appendChild(mapCanvas);
+    } else {
+      const mapPlaceholder = document.createElement('div');
+      mapPlaceholder.style.width = '100%';
+      mapPlaceholder.style.height = '100%';
+      mapPlaceholder.style.background = 'repeating-linear-gradient(135deg,#444 0 10px,#333 10px 20px)';
+      mapPlaceholder.style.border = '4px solid #666';
+      mapPlaceholder.style.borderRadius = '12px';
+      mapPlaceholder.style.display = 'flex';
+      mapPlaceholder.style.alignItems = 'center';
+      mapPlaceholder.style.justifyContent = 'center';
+      mapPlaceholder.style.color = '#bbb';
+      mapPlaceholder.style.fontSize = '2rem';
+      mapPlaceholder.textContent = 'World Map';
+      mapArea.appendChild(mapPlaceholder);
+    }
 
     // Right: Sidebar
     const sidebar = document.createElement('div');
