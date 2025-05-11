@@ -178,9 +178,19 @@ export class Renderer {
     if (value === OCEAN) return [30, 144, 255]; // blue
     if (value === LAND) return [34, 139, 34];   // green
     if (value >= 0) {
-      // Use the color property from the Country instance
-      if (countries[value] && countries[value].color) {
-        return countries[value].color;
+      const country = countries[value];
+      if (country) {
+        // If the country has an owner with RGBColor, use that
+        if (country.owner && typeof country.owner.RGBColor === 'string') {
+          const rgb = country.owner.RGBColor.split(',').map(Number);
+          if (rgb.length === 3 && rgb.every(v => !isNaN(v))) {
+            return [rgb[0], rgb[1], rgb[2]];
+          }
+        }
+        // Otherwise use the country's own color property
+        if (country.color) {
+          return country.color;
+        }
       }
       // fallback if not available
       return [200, 200, 200];

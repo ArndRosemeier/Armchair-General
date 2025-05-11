@@ -9,6 +9,24 @@ export interface CountryKnowledge {
 }
 
 export class Player {
+  /**
+   * Lookup for color names to RGB values
+   */
+  private static COLOR_RGBS: { [key: string]: string } = {
+    red: "255,0,0",
+    blue: "0,0,255",
+    green: "0,128,0",
+    yellow: "255,255,0"
+  };
+
+  /**
+   * Returns the RGB color string for the player's color (e.g., '255,0,0').
+   * Defaults to '0,0,0' (black) if color is unknown.
+   */
+  get RGBColor(): string {
+    return Player.COLOR_RGBS[this.color] || "0,0,0";
+  }
+
   static COLORS = ["red", "blue", "green", "yellow"];
   name: string;
   color: string;
