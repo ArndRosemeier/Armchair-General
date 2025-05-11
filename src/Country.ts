@@ -9,6 +9,7 @@ export class Country {
   border: [number, number][];
   oceanBorder: [number, number][];
   neighbors: Country[];
+  color: [number, number, number];
 
   constructor(name: string, owner: Player | null = null, armies: number = 0, income: number = 0) {
     this.name = name;
@@ -19,6 +20,12 @@ export class Country {
     this.border = [];
     this.oceanBorder = [];
     this.neighbors = [];
+    // Assign a random RGB color
+    this.color = [
+      Math.floor(80 + Math.random() * 150), // R: avoid too dark/light
+      Math.floor(80 + Math.random() * 150), // G
+      Math.floor(80 + Math.random() * 150)  // B
+    ];
   }
 
   setOwner(player: Player) {
