@@ -104,6 +104,45 @@ export class CountryGenerator {
       }
     }
 
+    // --- Post-process: Assign unclaimed islands (isolated LAND) to new country IDs ---
+    const visited: boolean[][] = Array.from({ length: height }, () => Array(width).fill(false));
+    let nextCountryId = 0;
+    // Find max used country index
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        if (continentMap[y][x] >= 0 && continentMap[y][x] + 1 > nextCountryId) {
+          nextCountryId = continentMap[y][x] + 1;
+        }
+      }
+    }
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        if (continentMap[y][x] === LAND && !visited[y][x]) {
+          // Start BFS to mark all connected LAND (the island)
+          const queue = [[x, y]];
+          visited[y][x] = true;
+          while (queue.length > 0) {
+            const [cx, cy] = queue.pop()!;
+            continentMap[cy][cx] = nextCountryId;
+            for (const [dx, dy] of [[1,0],[0,1],[-1,0],[0,-1]]) {
+              const nx = cx + dx, ny = cy + dy;
+              if (
+                nx >= 0 && nx < width &&
+                ny >= 0 && ny < height &&
+                continentMap[ny][nx] === LAND &&
+                !visited[ny][nx]
+              ) {
+                queue.push([nx, ny]);
+                visited[ny][nx] = true;
+              }
+            }
+          }
+          nextCountryId++;
+        }
+      }
+    }
+    // --- End post-process ---
+
     return continentMap;
   }
 
