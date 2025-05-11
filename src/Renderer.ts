@@ -48,6 +48,19 @@ export class Renderer {
         data[idx + 3] = 255; // alpha
       }
     }
+    // Draw black border for all land/country cells bordering ocean or out-of-bounds
+
+    // Draw country borders using the border property
+    const countries = worldMap.getCountries?.() || [];
+    for (const country of countries) {
+      for (const [x, y] of country.border || []) {
+        const idx = (y * width + x) * 4;
+        data[idx] = 0;
+        data[idx + 1] = 0;
+        data[idx + 2] = 0;
+        data[idx + 3] = 255;
+      }
+    }
     ctx.putImageData(imgData, 0, 0);
     return canvas;
   }
