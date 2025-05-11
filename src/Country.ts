@@ -10,6 +10,7 @@ export class Country {
   oceanBorder: [number, number][];
   neighbors: Country[];
   color: [number, number, number];
+  fortified: boolean = false;
   private _center: [number, number] | null = null;
 
   constructor(name: string, owner: Player | null = null, armies: number = 0, income: number = 0) {
