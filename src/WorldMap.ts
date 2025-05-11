@@ -9,6 +9,81 @@ export class WorldMap {
   private countries: Country[];
   private map: number[][];
 
+  // 100 real country names (ISO country list, no repeats)
+  static readonly REAL_COUNTRY_NAMES: string[] = [
+    "Afghanistan", "Albania", "Algeria", "Andorra", "Angola", "Argentina", "Armenia", "Australia", "Austria", "Azerbaijan",
+    "Bahamas", "Bahrain", "Bangladesh", "Barbados", "Belarus", "Belgium", "Belize", "Benin", "Bhutan", "Bolivia",
+    "Bosnia and Herzegovina", "Botswana", "Brazil", "Brunei", "Bulgaria", "Burkina Faso", "Burundi", "Cabo Verde", "Cambodia", "Cameroon",
+    "Canada", "Central African Republic", "Chad", "Chile", "China", "Colombia", "Comoros", "Congo", "Costa Rica", "Croatia",
+    "Cuba", "Cyprus", "Czechia", "Denmark", "Djibouti", "Dominica", "Dominican Republic", "Ecuador", "Egypt", "El Salvador",
+    "Equatorial Guinea", "Eritrea", "Estonia", "Eswatini", "Ethiopia", "Fiji", "Finland", "France", "Gabon", "Gambia",
+    "Georgia", "Germany", "Ghana", "Greece", "Grenada", "Guatemala", "Guinea", "Guinea-Bissau", "Guyana", "Haiti",
+    "Honduras", "Hungary", "Iceland", "India", "Indonesia", "Iran", "Iraq", "Ireland", "Israel", "Italy",
+    "Jamaica", "Japan", "Jordan", "Kazakhstan", "Kenya", "Kiribati", "Kuwait", "Kyrgyzstan", "Laos", "Latvia",
+    "Lebanon", "Lesotho", "Liberia", "Libya", "Liechtenstein", "Lithuania", "Luxembourg", "Madagascar", "Malawi", "Malaysia"
+  ];
+
+  // Assigns random names to all countries, no duplicates
+  assignRandomCountryNames() {
+    let allUnique = false;
+    while (!allUnique) {
+      const used = new Set<string>();
+      for (const country of this.countries) {
+        let name: string;
+        let attempts = 0;
+        do {
+          name = WorldMap.generateRandomName();
+          attempts++;
+          if (attempts > 1000) throw new Error('Failed to generate unique random country names');
+        } while (used.has(name));
+        country.name = name;
+        used.add(name);
+      }
+      allUnique = used.size === this.countries.length;
+    }
+  }
+
+  // Assigns real country names, falling back to random if all used
+  assignRealCountryNames() {
+    let allUnique = false;
+    while (!allUnique) {
+      const available = [...WorldMap.REAL_COUNTRY_NAMES];
+      const used = new Set<string>();
+      for (const country of this.countries) {
+        let name: string;
+        if (available.length > 0) {
+          const idx = Math.floor(Math.random() * available.length);
+          name = available.splice(idx, 1)[0];
+        } else {
+          let attempts = 0;
+          do {
+            name = WorldMap.generateRandomName();
+            attempts++;
+            if (attempts > 1000) throw new Error('Failed to generate unique fallback country names');
+          } while (used.has(name));
+        }
+        country.name = name;
+        used.add(name);
+      }
+      allUnique = used.size === this.countries.length;
+    }
+  }
+
+  // Generates a random fantasy-like name (e.g. 'Zantria', 'Morvek')
+  static generateRandomName(): string {
+    const syllables = [
+      'zan', 'mor', 'vek', 'tal', 'rin', 'dor', 'lek', 'sha', 'val', 'nor', 'ka', 'bel', 'dra', 'sil', 'tur', 'gar', 'fen', 'mir', 'sol', 'vor',
+      'lin', 'sar', 'qu', 'zel', 'ron', 'bar', 'zen', 'tir', 'lom', 'kal', 'vin', 'lor', 'mel', 'dar', 'gol', 'han', 'jor', 'ken', 'lun', 'mar',
+    ];
+    const syllableCount = 2 + Math.floor(Math.random() * 2); // 2 or 3 syllables
+    let name = '';
+    for (let i = 0; i < syllableCount; i++) {
+      name += syllables[Math.floor(Math.random() * syllables.length)];
+    }
+    // Capitalize first letter
+    return name.charAt(0).toUpperCase() + name.slice(1);
+  }
+
   constructor(width: number, height: number, countries: Country[] = []) {
     this.countries = countries;
     this.map = WorldMap.createOceanMap(width, height);
@@ -33,7 +108,7 @@ export class WorldMap {
   /**
    * Creates a full world map with continents and countries.
    */
-  static createMap(width: number, height: number, countryCount: number = 40): WorldMap {
+  static createMap(width: number, height: number, countryCount: number = 40, useRealNames: boolean = true): WorldMap {
     // 1. Generate continents
     const continents = generateDefaultContinentsMap(width, height);
     // 2. Generate countries on those continents
@@ -41,6 +116,11 @@ export class WorldMap {
     // 3. Create new WorldMap instance
     const worldMap = new WorldMap(width, height, countries);
     (worldMap as any).map = map; // Set the map property directly
+    if (useRealNames) {
+      worldMap.assignRealCountryNames();
+    } else {
+      worldMap.assignRandomCountryNames();
+    }
     return worldMap;
   }
 
