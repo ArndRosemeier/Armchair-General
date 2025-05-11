@@ -109,10 +109,14 @@ export function showNewGameDialog(container: HTMLElement): Promise<NewGameDialog
     // Recreate map button
     const recreateBtn = document.createElement('button');
     recreateBtn.textContent = 'Recreate Map';
-    // Track the latest requested map generation
+
+    // Track the latest requested map generation and worker state
     let mapGenerationToken = 0;
     let currentWorker: Worker | null = null;
-    recreateBtn.onclick = () => {
+    let currentMap: WorldMap | null = null;
+    let mapCanvas: HTMLCanvasElement | null = null;
+
+    function triggerMapGeneration() {
       mapGenerationToken++;
       if (currentWorker) {
         currentWorker.terminate();
@@ -141,7 +145,10 @@ export function showNewGameDialog(container: HTMLElement): Promise<NewGameDialog
         currentWorker = null;
       };
       currentWorker.postMessage({ type: 'generate', width: 1200, height: 800, countryCount: 40 });
-    };
+    }
+    recreateBtn.onclick = triggerMapGeneration;
+    // Automatically trigger map generation when dialog opens
+    triggerMapGeneration();
     recreateBtn.style.margin = '0 0 0 0';
     recreateBtn.style.padding = '10px 20px';
     recreateBtn.style.background = 'linear-gradient(90deg,#43cea2 0%,#185a9d 100%)';
@@ -166,13 +173,6 @@ export function showNewGameDialog(container: HTMLElement): Promise<NewGameDialog
     rightCol.style.justifyContent = 'flex-start';
     rightCol.style.padding = '36px 32px 24px 24px';
     main.appendChild(rightCol);
-
-    // Map state
-    let currentMap: WorldMap | null = null;
-    let mapCanvas: HTMLCanvasElement | null = null;
-    // No longer needed; replaced by worker logic above
-    // async function generateAndShowMap(token: number) { ... }
-
 
     // Player list state
     let players: PlayerConfig[] = [];

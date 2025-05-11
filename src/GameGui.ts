@@ -1,54 +1,44 @@
 export class GameGui {
   private state: string;
+  private currentGame: any = null;
+  private rootContainer: HTMLElement | null = null;
 
   constructor() {
     this.state = 'initialized';
   }
 
-  private currentGame: any = null;
-
   async mount(container: HTMLElement) {
-    // Add New Game button
-    const newGameBtn = document.createElement('button');
-    newGameBtn.textContent = 'New Game';
-    newGameBtn.style.margin = '8px';
-    newGameBtn.onclick = () => {
-      this.startNewGame(container);
-    };
-    container.appendChild(newGameBtn);
-
+    this.rootContainer = container;
     // Render the main GUI with a placeholder (no game yet)
     this.renderMainGui(container, this.currentGame);
   }
 
-  async startNewGame(container: HTMLElement) {
-    // Import and show the new game dialog
+  async startNewGame() {
+    // Always use the root container for the dialog
+    const container = this.rootContainer!;
     const { showNewGameDialog } = await import('./NewGameDialog');
-    try {
-      const result = await showNewGameDialog(container);
-      // Dynamically import Player and Game modules
-      const PlayerMod = await import('./Player');
-      const GameMod = await import('./Game');
-      // Use Player.COLORS or fallback
-      const defaultColors = ['#4fc3f7','#81c784','#ffb74d','#e57373','#ba68c8','#ffd54f','#64b5f6','#a1887f'];
-      const colorArr = PlayerMod.Player.COLORS ?? defaultColors;
-      const playerObjs = result.players.map((p, i) => new PlayerMod.Player(
-        p.name,
-        colorArr[i % colorArr.length],
-        [],
-        null,
-        [],
-        0,
-        p.isAI
-      ));
-      this.currentGame = new GameMod.Game(result.map, playerObjs);
-      this.renderMainGui(container, this.currentGame);
-    } catch {
-      // Dialog was cancelled - optionally handle
-    }
+    const result = await showNewGameDialog(container);
+    // Dynamically import Player and Game modules
+    const PlayerMod = await import('./Player');
+    const GameMod = await import('./Game');
+    // Use Player.COLORS or fallback
+    const defaultColors = ['#4fc3f7','#81c784','#ffb74d','#e57373','#ba68c8','#ffd54f','#64b5f6','#a1887f'];
+    const colorArr = PlayerMod.Player.COLORS ?? defaultColors;
+    const playerObjs = result.players.map((p, i) => new PlayerMod.Player(
+      p.name,
+      colorArr[i % colorArr.length],
+      [],
+      null,
+      [],
+      0,
+      p.isAI
+    ));
+    this.currentGame = new GameMod.Game(result.map, playerObjs);
+    this.renderMainGui(container, this.currentGame);
   }
 
-  renderMainGui(container: HTMLElement, game: any) {
+  renderMainGui(_container: HTMLElement, game: any) {
+    const container = this.rootContainer!;
     container.innerHTML = '';
     // Main wrapper
     const wrapper = document.createElement('div');
@@ -171,7 +161,7 @@ export class GameGui {
     newGameBtn.style.boxShadow = '0 2px 8px rgba(30,32,34,0.13)';
     newGameBtn.style.marginBottom = '8px';
     newGameBtn.onclick = () => {
-      this.startNewGame(container);
+      this.startNewGame();
     };
     actionsDiv.appendChild(newGameBtn);
 
