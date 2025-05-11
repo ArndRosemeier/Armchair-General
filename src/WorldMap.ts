@@ -1,5 +1,6 @@
 import { Country } from './Country';
-import { generateContinentsMap as generateContinentsMapImpl } from './generateContinents';
+import { generateContinentsMap as generateContinentsMapImpl, generateDefaultContinentsMap } from './generateContinents';
+import { generateDefaultCountries } from './generateCountries';
 
 export const OCEAN = -1;
 export const LAND = -2;
@@ -30,10 +31,17 @@ export class WorldMap {
   }
 
   /**
-   * Creates a world map (for now, just an ocean map)
+   * Creates a full world map with continents and countries.
    */
-  static createMap(width: number, height: number): number[][] {
-    return WorldMap.createOceanMap(width, height);
+  static createMap(width: number, height: number, countryCount: number = 40): WorldMap {
+    // 1. Generate continents
+    const continents = generateDefaultContinentsMap(width, height);
+    // 2. Generate countries on those continents
+    const { map, countries } = generateDefaultCountries(continents, countryCount);
+    // 3. Create new WorldMap instance
+    const worldMap = new WorldMap(width, height, countries);
+    (worldMap as any).map = map; // Set the map property directly
+    return worldMap;
   }
 
   addCountry(country: Country) {

@@ -201,6 +201,8 @@ export class CountryGenerator {
     for (const idStr in countryMap) {
       const id = Number(idStr);
       const country = countryMap[id];
+      country.border = [];
+      country.oceanBorder = [];
       for (const [x, y] of country.coordinates) {
         let isBorder = false;
         let isOceanBorder = false;
@@ -336,12 +338,12 @@ function mulberry32(a: number) {
   }
 }
 
-export function generateDefaultCountries(continentMap: number[][], countryCount: number): number[][] {
-  // Use generateCountries and return only the map property
+export function generateDefaultCountries(continentMap: number[][], countryCount: number): GenerateCountriesResult {
+  // Use generateCountries and return the full result (map and countries)
   return CountryGenerator.generateCountries(continentMap, {
     countryCount,
     minResistance: 0,
     maxResistance: 130,
     skipProbability: 0.02
-  }).map;
+  });
 }
