@@ -100,6 +100,23 @@ export class GameGui {
     const countries = this.currentGame.worldMap ? this.currentGame.worldMap.getCountries() : [];
     // Get clicked country objects by name
     const clickedCountries = this.clickedCountryNames.map(name => countries.find((c: any) => c.name === name)).filter(Boolean);
+
+    // If no actions left, show warning and return
+    if (this.currentGame.activePlayer.actionsLeft <= 0) {
+      const warning = document.createElement('div');
+      warning.textContent = 'You are out of actions for this turn!';
+      warning.style.background = 'linear-gradient(90deg,#ff5e62 0%,#ff9966 100%)';
+      warning.style.color = '#fff';
+      warning.style.fontSize = '1.5rem';
+      warning.style.fontWeight = 'bold';
+      warning.style.padding = '32px 0';
+      warning.style.borderRadius = '12px';
+      warning.style.textAlign = 'center';
+      warning.style.margin = '24px 0';
+      actionsDiv.appendChild(warning);
+      return;
+    }
+
     // Create dynamic action buttons
     const dynamicButtons: HTMLElement[] = [];
     for (const action of this.actions) {
@@ -127,6 +144,8 @@ export class GameGui {
           } else {
             result = action.Act(clickedCountries, this.currentGame.activePlayer, this.currentGame);
           }
+          // Decrement action count
+          this.currentGame.activePlayer.useAction();
           if (typeof result === 'string' && result !== null) {
             this.showModalMessage(result);
             this.afterAction();
@@ -431,6 +450,21 @@ export class GameGui {
     if (game && game.players && game.players.length > 0) {
       const activePlayer = game.activePlayer;
       turnInfo.textContent = `Turn: ${game.gameTurn} | Player: ${activePlayer.name}`;
+      // Add action stars visualization
+      const starsDiv = document.createElement('div');
+      const total = activePlayer.constructor.ACTIONS_PER_TURN || 5;
+      const left = activePlayer.actionsLeft;
+      starsDiv.style.margin = '8px 0 0 0';
+      starsDiv.style.fontSize = '2rem';
+      starsDiv.style.letterSpacing = '0.2rem';
+      for (let i = 0; i < total; i++) {
+        const star = document.createElement('span');
+        star.textContent = i < left ? '★' : '☆';
+        star.style.color = i < left ? '#ffd700' : '#888';
+        starsDiv.appendChild(star);
+      }
+      starsDiv.title = `${left} of ${total} actions remaining`;
+      gameInfo.appendChild(starsDiv);
     } else {
       turnInfo.textContent = 'No game loaded. Start a new game to play!';
     }

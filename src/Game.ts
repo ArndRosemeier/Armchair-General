@@ -40,6 +40,10 @@ export class Game {
     if (this.activePlayerIndex === 0) {
       this.gameTurn++;
     }
+    // Reset action limit for all players (or just active player if preferred)
+    for (const player of this.players) {
+      player.resetActions();
+    }
   }
 
    /**

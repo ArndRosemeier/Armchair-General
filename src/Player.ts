@@ -17,6 +17,22 @@ export interface CountryInfo {
 }
 
 export class Player {
+  static readonly ACTIONS_PER_TURN = 5;
+  actionsLeft: number = Player.ACTIONS_PER_TURN;
+
+  /**
+   * Resets the available actions to the turn limit.
+   */
+  resetActions() {
+    this.actionsLeft = Player.ACTIONS_PER_TURN;
+  }
+
+  /**
+   * Decrements the actions left for the player, to be called when an action is taken.
+   */
+  useAction() {
+    if (this.actionsLeft > 0) this.actionsLeft--;
+  }
   /**
    * Lookup for color names to RGB values
    */
@@ -74,6 +90,7 @@ export class Player {
     this.knowledge = knowledge;
     this.money = money;
     this.isAI = isAI;
+    this.actionsLeft = Player.ACTIONS_PER_TURN;
   }
 
   /**
