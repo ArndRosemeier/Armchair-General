@@ -50,6 +50,26 @@ export class GameGui {
     this.markMapDirty();
     if (this.rootContainer) {
       this.renderMainGui(this.rootContainer, this.currentGame);
+      // After re-render, update country info panel for last clicked country
+      if (this.clickedCountryNames.length > 0 && this.currentGame && this.currentGame.worldMap) {
+        const lastCountryName = this.clickedCountryNames[this.clickedCountryNames.length - 1];
+        const countries = this.currentGame.worldMap.getCountries();
+        const clickedCountry = countries.find((c: any) => c.name === lastCountryName);
+        if (clickedCountry && this.currentGame.activePlayer && typeof this.currentGame.gameTurn === 'number') {
+          const info = this.currentGame.activePlayer.getCountryInfo(clickedCountry, this.currentGame.gameTurn);
+          const infoPanel = document.getElementById('country-info-panel');
+          if (infoPanel) {
+            infoPanel.innerHTML = `
+              <b>Country Info</b><br>
+              <div><b>Name:</b> ${info.name}</div>
+              <div><b>Owner:</b> ${info.owner ? info.owner.name : 'None'}</div>
+              <div><b>Income:</b> ${info.income !== undefined ? info.income : '?'}</div>
+              <div><b>Army:</b> ${info.army !== undefined ? info.army : '?'}</div>
+              <div><b>Recency:</b> ${info.recency !== undefined ? info.recency : '?'}</div>
+            `;
+          }
+        }
+      }
     }
   }
 
