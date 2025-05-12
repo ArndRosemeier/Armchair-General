@@ -71,6 +71,7 @@ export class GameGui {
         }
       }
     }
+    this.updateActionButtons();
   }
 
   /**
