@@ -1,4 +1,5 @@
 import { Country } from './Country';
+import { Continent } from './Continent';
 import { generateContinentsMap as generateContinentsMapImpl, generateDefaultContinentsMap } from './generateContinents';
 import { generateDefaultCountries } from './generateCountries';
 
@@ -8,6 +9,7 @@ export const LAND = -2;
 export class WorldMap {
   private countries: Country[];
   private map: number[][];
+  public continents: Continent[] = [];
 
   // 100 real country names (ISO country list, no repeats)
   static readonly REAL_COUNTRY_NAMES: string[] = [
@@ -121,6 +123,7 @@ export class WorldMap {
     } else {
       worldMap.assignRandomCountryNames();
     }
+    worldMap.createContinents();
     return worldMap;
   }
 
@@ -128,8 +131,62 @@ export class WorldMap {
     this.countries.push(country);
   }
 
+  /**
+   * Groups countries into continents using their neighbors property.
+   * Each continent is a cluster of connected countries.
+   */
+  createContinents() {
+    const visited = new Set<Country>();
+    const continents: Continent[] = [];
+    for (const country of this.countries) {
+      if (!visited.has(country)) {
+        // BFS to find all connected countries
+        const queue: Country[] = [country];
+        const continentCountries: Country[] = [];
+        visited.add(country);
+        while (queue.length > 0) {
+          const current = queue.shift()!;
+          continentCountries.push(current);
+          for (const neighbor of current.neighbors) {
+            if (!visited.has(neighbor)) {
+              visited.add(neighbor);
+              queue.push(neighbor);
+            }
+          }
+        }
+        continents.push(new Continent(continentCountries));
+      }
+    }
+    this.continents = continents;
+  }
+
   getCountries(): Country[] {
     return this.countries;
+  }
+
+  /**
+   * Calculates the distance between two countries.
+   * If they are neighbors, returns the Euclidean distance between centers.
+   * If not neighbors and both have ocean borders, returns distance * 5.
+   * If not neighbors and at least one lacks ocean border, returns null (unreachable).
+   */
+  distance(a: Country, b: Country): number | null {
+    // Calculate Euclidean distance between centers
+    const [ax, ay] = a.center();
+    const [bx, by] = b.center();
+    const dist = Math.sqrt((ax - bx) ** 2 + (ay - by) ** 2);
+    // Check if they are neighbors
+    if (a.neighbors.includes(b) || b.neighbors.includes(a)) {
+      return dist;
+    }
+    // Check if both have ocean borders
+    const aHasOcean = a.oceanBorder && a.oceanBorder.length > 0;
+    const bHasOcean = b.oceanBorder && b.oceanBorder.length > 0;
+    if (aHasOcean && bHasOcean) {
+      return dist * 5;
+    }
+    // Otherwise unreachable
+    return null;
   }
 
   getMap(): number[][] {

@@ -5,6 +5,9 @@ export class GameGui {
   private currentGame: any = null;
   private rootContainer: HTMLElement | null = null;
 
+  // List of all clicked country names
+  private clickedCountryNames: string[] = [];
+
   // Cached rendered world map
   private worldMapCanvas: HTMLCanvasElement | null = null;
   private mapDirty: boolean = true;
@@ -118,6 +121,23 @@ export class GameGui {
     if (game && game.worldMap) {
       mapCanvas = this.getWorldMapCanvas();
     }
+    // Track clicked country names (persistent across renders)
+    if (!this.clickedCountryNames) {
+      this.clickedCountryNames = [];
+    }
+    // Panel for displaying clicked country names
+    const clickedPanel = document.createElement('div');
+    clickedPanel.style.background = '#181b1f';
+    clickedPanel.style.border = '1px solid #444';
+    clickedPanel.style.borderRadius = '8px';
+    clickedPanel.style.padding = '10px 12px';
+    clickedPanel.style.marginBottom = '18px';
+    clickedPanel.style.color = '#ffe082';
+    clickedPanel.style.fontSize = '1.05rem';
+    clickedPanel.style.maxHeight = '120px';
+    clickedPanel.style.overflowY = 'auto';
+    clickedPanel.innerHTML = '<b>Clicked Countries:</b><br><span id="clicked-country-list">(none)</span>';
+
     if (mapCanvas) {
       // Only set style width/height for display scaling
       mapCanvas.style.width = '100%';
@@ -139,6 +159,12 @@ export class GameGui {
             const value = map[y][x];
             if (value >= 0 && countries[value]) {
               clickedCountry = countries[value];
+              this.clickedCountryNames.push(clickedCountry.name);
+              // Update the panel
+              const listElem = document.getElementById('clicked-country-list');
+              if (listElem) {
+                listElem.innerHTML = this.clickedCountryNames.map((n: string) => `<div>${n}</div>`).join('');
+              }
               console.log('[GameGui] Clicked country:', clickedCountry.name);
             } else {
               console.log('[GameGui] No country at click.');
@@ -164,6 +190,18 @@ export class GameGui {
 
     // Right: Sidebar
     const sidebar = document.createElement('div');
+    // Add clicked countries panel at the top of the sidebar
+    sidebar.appendChild(clickedPanel);
+    // On initial render, fill panel with any previously clicked countries
+    setTimeout(() => {
+      const listElem = document.getElementById('clicked-country-list');
+      if (listElem) {
+        listElem.innerHTML = this.clickedCountryNames.length
+          ? this.clickedCountryNames.map((n: string) => `<div>${n}</div>`).join('')
+          : '(none)';
+      }
+    }, 0);
+
     sidebar.style.flex = '1';
     sidebar.style.background = 'rgba(30,32,34,0.98)';
     sidebar.style.display = 'flex';

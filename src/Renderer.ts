@@ -8,7 +8,12 @@ export class Renderer {
 
   static drawBorders: boolean = true;
 
-  static render(worldMap: WorldMap): HTMLCanvasElement {
+  /**
+   * Renders the world map. Optionally highlights given countries with a yellow overlay.
+   * @param worldMap The WorldMap to render
+   * @param highlightedCountries Optional array of countries to highlight
+   */
+  static render(worldMap: WorldMap, highlightedCountries: any[] = []): HTMLCanvasElement {
     const map = worldMap.getMap();
     const countries = worldMap.getCountries?.() || [];
     // Log all home country names
@@ -31,6 +36,22 @@ export class Renderer {
         data[idx + 1] = g;
         data[idx + 2] = b;
         data[idx + 3] = 255; // alpha
+      }
+    }
+    // Highlight countries with a yellow overlay
+    if (highlightedCountries && highlightedCountries.length > 0) {
+      for (const country of highlightedCountries) {
+        if (!country || !country.coordinates) continue;
+        for (const [x, y] of country.coordinates) {
+          if (x >= 0 && x < width && y >= 0 && y < height) {
+            const idx = (y * width + x) * 4;
+            // Overlay semi-transparent yellow (blend with base color)
+            data[idx] = Math.min(255, Math.round(0.6 * 255 + 0.4 * data[idx]));     // R
+            data[idx + 1] = Math.min(255, Math.round(0.6 * 255 + 0.4 * data[idx + 1])); // G
+            data[idx + 2] = Math.round(0.4 * data[idx + 2]); // B
+            data[idx + 3] = 255; // keep fully opaque
+          }
+        }
       }
     }
     // Draw black border for all land/country cells bordering ocean or out-of-bounds
@@ -109,7 +130,8 @@ export class Renderer {
     initialHeight: number = 512
   ): HTMLCanvasElement {
     // Render to offscreen canvas (1 pixel per cell)
-    const offscreen = Renderer.render(worldMap);
+    let highlightedCountry: any = null;
+    let offscreen = Renderer.render(worldMap);
     const mapWidth = offscreen.width;
     const mapHeight = offscreen.height;
 
@@ -131,14 +153,44 @@ export class Renderer {
     let lastY = 0;
 
     function draw() {
+      // Re-render offscreen with highlight if needed
+      offscreen = Renderer.render(worldMap, highlightedCountry ? [highlightedCountry] : []);
       ctx!.setTransform(1, 0, 0, 1, 0, 0); // reset
       ctx!.clearRect(0, 0, canvas.width, canvas.height);
       ctx!.setTransform(scale, 0, 0, scale, offsetX, offsetY);
       ctx!.drawImage(offscreen, 0, 0);
     }
 
-    // Mouse events for panning
+    // Mouse events for panning and highlighting
     canvas.addEventListener('mousedown', (e) => {
+      // Convert mouse position to map coordinates
+      const rect = canvas.getBoundingClientRect();
+      const mouseX = (e.clientX - rect.left - offsetX) / scale;
+      const mouseY = (e.clientY - rect.top - offsetY) / scale;
+      // Find the country at this position
+      const map = worldMap.getMap();
+      const countries = worldMap.getCountries();
+      const x = Math.floor(mouseX);
+      const y = Math.floor(mouseY);
+      console.log('[Renderer] Mouse click:', { clientX: e.clientX, clientY: e.clientY, mouseX, mouseY, x, y });
+      let clickedCountry = null;
+      if (x >= 0 && y >= 0 && y < map.length && x < map[0].length) {
+        const value = map[y][x];
+        console.log('[Renderer] Map value at click:', value);
+        if (value >= 0 && countries[value]) {
+          clickedCountry = countries[value];
+          console.log('[Renderer] Clicked country:', clickedCountry.name);
+        }
+      }
+      if (clickedCountry) {
+        highlightedCountry = clickedCountry;
+        draw();
+        // Do not start panning if a country was clicked
+        return;
+      } else {
+        console.log('[Renderer] No country found at click.');
+      }
+      // Otherwise, start panning
       isPanning = true;
       lastX = e.clientX;
       lastY = e.clientY;
@@ -183,7 +235,7 @@ export class Renderer {
         // If the country has an owner with RGBColor, use that
         if (country.owner && typeof country.owner.RGBColor === 'string') {
           const rgb = country.owner.RGBColor.split(',').map(Number);
-          if (rgb.length === 3 && rgb.every(v => !isNaN(v))) {
+          if (rgb.length === 3 && rgb.every((v: number) => !isNaN(v))) {
             return [rgb[0], rgb[1], rgb[2]];
           }
         }
