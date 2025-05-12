@@ -1,6 +1,7 @@
 import { Renderer } from './Renderer';
 import { Action } from './Action';
 import { ActionSpy } from './ActionSpy';
+import { ActionFortify } from './ActionFortify';
 
 export class GameGui {
   private state: string;
@@ -19,7 +20,7 @@ export class GameGui {
 
   constructor() {
     this.state = 'initialized';
-    this.actions = [new ActionSpy()];
+    this.actions = [new ActionSpy(), new ActionFortify()];
   }
 
   /**

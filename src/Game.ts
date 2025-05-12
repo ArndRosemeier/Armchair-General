@@ -12,6 +12,7 @@ export class Game {
   static readonly spyFortifiedCost = 1000000;
   static readonly initialPlayerMoney = 10000000;
   static readonly homeCountryIncome = 4000000;
+  static readonly fortifyCost = 100000;
   worldMap: WorldMap;
   players: Player[];
   gameTurn: number;
