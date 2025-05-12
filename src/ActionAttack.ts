@@ -56,7 +56,7 @@ export class ActionAttack extends Action {
     // Calculate chance
     const chance = ActionAttack.AttackChance(fromCountry, toCountry, amount, currentGame);
     const roll = Math.random();
-    const delta = Math.abs(roll - chance);
+    const delta = Math.sqrt(Math.abs(roll - chance));
     let resultMsg = '';
     fromCountry.armies -= amount;
     if (roll < chance) {
@@ -66,15 +66,27 @@ export class ActionAttack extends Action {
       // The closer the roll to chance, the fewer attackers remain
       // E.g., if delta is small, more attackers lost
       // Let's use: survivors = Math.max(1, Math.round(amount * delta))
-      const survivors = Math.max(1, Math.round(amount * delta));
+      let survivors = Math.max(1, Math.round(amount * delta));
+      // Round survivors to nearest 1000, minimum 1000 if any survive
+      if (survivors > 0) {
+        survivors = Math.max(1000, Math.round(survivors / 1000) * 1000);
+      }
       toCountry.armies = survivors;
       resultMsg = `Attack successful! ${survivors} of your ${amount} armies occupy ${toCountry.name}.`;
     } else {
       // Attack repelled
       // All attackers lost, defenders diminished by portion based on delta
       // defenders lost = Math.round(toCountry.armies * delta)
-      const defendersLost = Math.round(toCountry.armies * delta);
+      let defendersLost = Math.round(toCountry.armies * delta);
+      // Round defendersLost to nearest 1000, minimum 1000 if any lost
+      if (defendersLost > 0) {
+        defendersLost = Math.max(1000, Math.round(defendersLost / 1000) * 1000);
+      }
       toCountry.armies = Math.max(1, toCountry.armies - defendersLost);
+      // Ensure remaining defenders is a multiple of 1000 if > 0
+      if (toCountry.armies > 0) {
+        toCountry.armies = Math.max(1000, Math.round(toCountry.armies / 1000) * 1000);
+      }
       resultMsg = `Attack failed! All ${amount} attacking armies lost. Defenders lost ${defendersLost} troops.`;
     }
     return resultMsg;

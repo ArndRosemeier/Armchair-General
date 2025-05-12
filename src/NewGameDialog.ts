@@ -130,14 +130,22 @@ export function showNewGameDialog(container: HTMLElement): Promise<NewGameDialog
         if (thisToken !== mapGenerationToken) return;
         const { map, countries } = event.data.result;
         // Reconstruct countries as real Country instances
+        // Step 1: Reconstruct all countries (neighbors left empty for now)
         const reconstructedCountries = countries.map((c: any) => {
           const country = new Country(c.name, c.owner, c.armies, c.income);
           country.coordinates = c.coordinates;
           country.border = c.border;
           country.oceanBorder = c.oceanBorder;
-          country.neighbors = c.neighbors;
           country.color = c.color;
           return country;
+        });
+        // Step 2: Build a lookup map by name
+        const countryMap = new Map(reconstructedCountries.map(c => [c.name, c]));
+        // Step 3: Assign neighbors by reference
+        countries.forEach((c: any, i: number) => {
+          reconstructedCountries[i].neighbors = (c.neighbors || [])
+            .map((n: any) => countryMap.get(n.name))
+            .filter(Boolean);
         });
         // Reconstruct WorldMap from plain data, restoring prototype for methods
         const worldMap = Object.assign(Object.create(WorldMap.prototype), {
