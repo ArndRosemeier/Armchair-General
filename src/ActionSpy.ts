@@ -15,7 +15,7 @@ export class ActionSpy extends Action {
     return `Spy on ${lastCountry.name}`;
   }
 
-  Act(countries: Country[], activePlayer: Player): string | null {
+  Act(countries: Country[], activePlayer: Player, currentGame: Game): string | null {
     // 1. Check if at least one country is given
     if (countries.length === 0) {
       return 'Please select a country to spy on.';
@@ -23,15 +23,15 @@ export class ActionSpy extends Action {
     // 2. Take the latest country as the target
     const target = countries[countries.length - 1];
     // 3. Check if player has enough money
-    // Use static import for Game
     if (activePlayer.money < Game.spyCost) {
       return `Not enough money to spy. You need $${Game.spyCost}.`;
     }
     // 4. Check if country is already in knowledge and was spied on this turn
     const knowledge = activePlayer.knowledge.find(k => k.country === target);
-    // @ts-ignore
-    const currentGame = globalThis.currentGame || (window as any)?.game;
-    const gameTurn = currentGame?.gameTurn ?? (activePlayer as any).gameTurn;
+    if (!currentGame) {
+      return 'Internal error: currentGame is required.';
+    }
+    const gameTurn = currentGame.gameTurn;
     if (knowledge && knowledge.gameTurn === gameTurn) {
       return 'You already have recent information about this country.';
     }

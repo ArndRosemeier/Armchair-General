@@ -1,5 +1,6 @@
 import { Country } from './Country';
 import { Player } from './Player';
+import { Game } from './Game';
 
 export abstract class Action {
   /**
@@ -15,5 +16,5 @@ export abstract class Action {
    * @param activePlayer The active player
    * @returns A string describing the result or outcome of the action.
    */
-  abstract Act(countries: Country[], activePlayer: Player): string | null;
+  abstract Act(countries: Country[], activePlayer: Player, currentGame: Game): string | null;
 }

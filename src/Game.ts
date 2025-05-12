@@ -122,8 +122,16 @@ export class Game {
       home.income = Game.homeCountryIncome;
       home.fortified = true;
     }
-    // Log home country assignments
-    console.log('Assigned home countries:', players.map(p => `${p.name}: ${p.homeCountry ? p.homeCountry.name : 'none'}`));
+    // Initialize army sizes
+    for (const country of worldMap.getCountries()) {
+      if (country.owner) {
+        country.armies = 100000;
+      } else {
+        // Heavily weight toward smaller numbers
+        const army = Math.round((Math.random() * Math.random() * 99000 + 1000) / 1000) * 1000;
+        country.armies = army;
+      }
+    }
     return new Game(worldMap, players);
   }
 }

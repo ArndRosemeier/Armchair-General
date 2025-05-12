@@ -110,7 +110,7 @@ export class GameGui {
         btn.style.boxShadow = '0 2px 8px rgba(30,32,34,0.13)';
         btn.style.marginBottom = '8px';
         btn.onclick = () => {
-          const result = action.Act(clickedCountries, this.currentGame.activePlayer);
+          const result = action.Act(clickedCountries, this.currentGame.activePlayer, this.currentGame);
           if (typeof result === 'string' && result !== null) {
             this.showModalMessage(result);
           } else {
