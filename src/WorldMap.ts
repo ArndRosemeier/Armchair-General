@@ -7,6 +7,41 @@ export const OCEAN = -1;
 export const LAND = -2;
 
 export class WorldMap {
+  /**
+   * Logs all country names in order, with an optional label for context.
+   */
+  static logCountryNamesInOrder(countries: Country[], label: string = ''): void {
+    const names = countries.map((c, i) => `${i}: ${c.name}`);
+    console.log(`[WorldMap] Country order${label ? ' - ' + label : ''}:\n` + names.join(', '));
+  }
+
+  /**
+   * Checks that for every country index in the map, countries[index] is a valid Country instance.
+   * Optionally logs any mismatches or out-of-bounds indices. Returns true if consistent, false otherwise.
+   */
+  static checkMapCountryConsistency(map: number[][], countries: Country[]): boolean {
+    if (!Array.isArray(map) || !Array.isArray(countries)) {
+      console.error('[WorldMap] Consistency check failed: map or countries not arrays');
+      return false;
+    }
+    let consistent = true;
+    for (let y = 0; y < map.length; ++y) {
+      for (let x = 0; x < map[y].length; ++x) {
+        const idx = map[y][x];
+        if (idx >= 0) {
+          if (!countries[idx]) {
+            console.error(`[WorldMap] Inconsistent: map[${y}][${x}] = ${idx}, but countries[${idx}] is undefined`);
+            consistent = false;
+          } else if (typeof countries[idx].name !== 'string') {
+            console.error(`[WorldMap] Inconsistent: countries[${idx}] has no valid name at map[${y}][${x}]`);
+            consistent = false;
+          }
+        }
+      }
+    }
+    return consistent;
+  }
+
   private countries: Country[];
   private map: number[][];
   public continents: Continent[] = [];

@@ -12,6 +12,7 @@ export class ActionSpy extends Action {
       return null;
     }
     const lastCountry = countries[countries.length - 1];
+    if (lastCountry.owner == activePlayer) return null;
     return `Spy on ${lastCountry.name}`;
   }
 

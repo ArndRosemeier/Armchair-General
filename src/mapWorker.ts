@@ -17,10 +17,18 @@ ctx.onmessage = async (event: MessageEvent) => {
   if (data.type === 'generate') {
     // Generate the map (runs in worker thread)
     const worldMap = WorldMap.createMap(data.width, data.height, data.countryCount);
+    // Log country order in worker before transfer
+    WorldMap.logCountryNamesInOrder(worldMap.getCountries(), 'in worker');
     // Serialize the map (WorldMap is not structured cloneable)
+    const map = worldMap.getMap();
+    const countries = worldMap.getCountries();
+    // Consistency check in worker
+    if (!WorldMap.checkMapCountryConsistency(map, countries)) {
+      console.error('[WorldMap] Consistency check failed in worker before transfer!');
+    }
     const serialized = {
-      map: worldMap.getMap(),
-      countries: worldMap.getCountries(),
+      map,
+      countries,
     };
     ctx.postMessage({ type: 'done', result: serialized });
   }

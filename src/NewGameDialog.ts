@@ -141,6 +141,8 @@ export function showNewGameDialog(container: HTMLElement): Promise<NewGameDialog
         });
         // Step 2: Build a lookup map by name
         const countryMap = new Map(reconstructedCountries.map(c => [c.name, c]));
+        // Log country order after transfer
+        WorldMap.logCountryNamesInOrder(reconstructedCountries, 'after transfer');
         // Step 3: Assign neighbors by reference
         countries.forEach((c: any, i: number) => {
           reconstructedCountries[i].neighbors = (c.neighbors || [])
@@ -152,6 +154,10 @@ export function showNewGameDialog(container: HTMLElement): Promise<NewGameDialog
           map,
           countries: reconstructedCountries,
         });
+        // Consistency check: ensure map indices match countries array
+        if (!WorldMap.checkMapCountryConsistency(map, reconstructedCountries)) {
+          console.warn('[WorldMap] Consistency check failed after reconstructing from worker!');
+        }
         currentMap = worldMap as WorldMap;
         if (!currentMap) {
           throw new Error('WorldMap is null when rendering map preview.');

@@ -316,18 +316,7 @@ export class GameGui {
     if (!this.clickedCountryNames) {
       this.clickedCountryNames = [];
     }
-    // Panel for displaying clicked country names
-    const clickedPanel = document.createElement('div');
-    clickedPanel.style.background = '#181b1f';
-    clickedPanel.style.border = '1px solid #444';
-    clickedPanel.style.borderRadius = '8px';
-    clickedPanel.style.padding = '10px 12px';
-    clickedPanel.style.marginBottom = '18px';
-    clickedPanel.style.color = '#ffe082';
-    clickedPanel.style.fontSize = '1.05rem';
-    clickedPanel.style.maxHeight = '120px';
-    clickedPanel.style.overflowY = 'auto';
-    clickedPanel.innerHTML = '<b>Clicked Countries:</b><br><span id="clicked-country-list">(none)</span>';
+
 
     // Panel for displaying country info
     const countryInfoPanel = document.createElement('div');
@@ -369,11 +358,7 @@ export class GameGui {
                 console.warn(`[GameGui] Click at (${x},${y}) is not in coordinates of country: ${clickedCountry.name}`);
               }
               this.clickedCountryNames.push(clickedCountry.name);
-              // Update the panel
-              const listElem = document.getElementById('clicked-country-list');
-              if (listElem) {
-                listElem.innerHTML = this.clickedCountryNames.map((n: string) => `<div>${n}</div>`).join('');
-              }
+
               // Update action buttons
               this.updateActionButtons();
               // Show country info in sidebar
@@ -424,19 +409,10 @@ export class GameGui {
 
     // Right: Sidebar
     const sidebar = document.createElement('div');
-    // Add clicked countries panel at the top of the sidebar
-    sidebar.appendChild(clickedPanel);
+
     // Add country info panel below
     sidebar.appendChild(countryInfoPanel);
-    // On initial render, fill panel with any previously clicked countries
-    setTimeout(() => {
-      const listElem = document.getElementById('clicked-country-list');
-      if (listElem) {
-        listElem.innerHTML = this.clickedCountryNames.length
-          ? this.clickedCountryNames.map((n: string) => `<div>${n}</div>`).join('')
-          : '(none)';
-      }
-    }, 0);
+
 
     sidebar.style.flex = '1';
     sidebar.style.background = 'rgba(30,32,34,0.98)';

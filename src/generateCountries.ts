@@ -182,7 +182,9 @@ export class CountryGenerator {
         }
       }
     }
-    const countries: Country[] = Object.values(countryMap);
+    // Ensure countries array is indexed by country ID
+    const maxId = Math.max(...Object.keys(countryMap).map(Number));
+    const countries: Country[] = Array.from({ length: maxId + 1 }, (_, i) => countryMap[i]);
     // 2. Collect border and ocean border for each country
     this.findCountryBorders(map, countries, width, height);
 
