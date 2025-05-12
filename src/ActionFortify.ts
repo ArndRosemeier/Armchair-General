@@ -18,7 +18,7 @@ export class ActionFortify extends Action {
     return `Fortify ${lastCountry.name}`;
   }
 
-  Act(countries: Country[], activePlayer: Player, currentGame: Game): string | null {
+  Act(countries: Country[], activePlayer: Player, currentGame: Game, amount: number = 0): string | null {
     if (!currentGame) {
       return 'Internal error: currentGame is required.';
     }
@@ -31,6 +31,10 @@ export class ActionFortify extends Action {
     }
     activePlayer.money -= Game.fortifyCost;
     target.fortified = true;
+    return null;
+  }
+
+  RequiresAmount(countries: Country[]): [number, number] | null {
     return null;
   }
 }

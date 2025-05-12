@@ -15,7 +15,7 @@ export class ActionSpy extends Action {
     return `Spy on ${lastCountry.name}`;
   }
 
-  Act(countries: Country[], activePlayer: Player, currentGame: Game): string | null {
+  Act(countries: Country[], activePlayer: Player, currentGame: Game, amount: number = 0): string | null {
     // 1. Check if at least one country is given
     if (countries.length === 0) {
       return 'Please select a country to spy on.';
@@ -50,6 +50,10 @@ export class ActionSpy extends Action {
     } else {
       activePlayer.knowledge.push(newKnowledge);
     }
+    return null;
+  }
+
+  RequiresAmount(countries: Country[]): [number, number] | null {
     return null;
   }
 }

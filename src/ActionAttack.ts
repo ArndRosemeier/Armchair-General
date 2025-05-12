@@ -29,7 +29,7 @@ export class ActionAttack extends Action {
     return `Attack ${toCountry.name} from ${fromCountry.name}`;
   }
 
-  Act(countries: Country[], activePlayer: Player, currentGame: Game): string | null {
+  Act(countries: Country[], activePlayer: Player, currentGame: Game, amount: number = 0): string | null {
     if (!currentGame) {
       return 'Internal error: currentGame is required.';
     }
@@ -49,11 +49,36 @@ export class ActionAttack extends Action {
     if (toCountry.owner === activePlayer) {
       return 'Cannot attack your own country.';
     }
-    // Placeholder: no combat logic, just mark as conquered
-    toCountry.owner = activePlayer;
-    toCountry.armies = Math.floor(fromCountry.armies / 2);
-    fromCountry.armies = Math.ceil(fromCountry.armies / 2);
-    return null;
+    // Actual combat logic
+    if (amount <= 0 || amount >= fromCountry.armies) {
+      return 'Invalid number of armies committed.';
+    }
+    // Calculate chance
+    const chance = ActionAttack.AttackChance(fromCountry, toCountry, amount, currentGame);
+    const roll = Math.random();
+    const delta = Math.abs(roll - chance);
+    let resultMsg = '';
+    fromCountry.armies -= amount;
+    if (roll < chance) {
+      // Attack successful
+      toCountry.owner = activePlayer;
+      // Defenders obliterated, attackers occupy with portion of amount based on delta
+      // The closer the roll to chance, the fewer attackers remain
+      // E.g., if delta is small, more attackers lost
+      // Let's use: survivors = Math.max(1, Math.round(amount * delta))
+      const survivors = Math.max(1, Math.round(amount * delta));
+      toCountry.armies = survivors;
+      resultMsg = `Attack successful! ${survivors} of your ${amount} armies occupy ${toCountry.name}.`;
+    } else {
+      // Attack repelled
+      // All attackers lost, defenders diminished by portion based on delta
+      // defenders lost = Math.round(toCountry.armies * delta)
+      const defendersLost = Math.round(toCountry.armies * delta);
+      toCountry.armies = Math.max(1, toCountry.armies - defendersLost);
+      resultMsg = `Attack failed! All ${amount} attacking armies lost. Defenders lost ${defendersLost} troops.`;
+    }
+    return resultMsg;
+
   }
 
   /**
@@ -87,5 +112,12 @@ export class ActionAttack extends Action {
       // From 0.5 to 1
       return 0.5 + 0.5 * (attackForce - defenseForce) / (2 * defenseForce);
     }
+  }
+
+  RequiresAmount(countries: Country[]): [number, number] | null {
+    if (countries.length < 2) return null;
+    const fromCountry = countries[countries.length - 2];
+    if (!fromCountry || typeof fromCountry.armies !== 'number' || fromCountry.armies <= 1) return null;
+    return [1000, fromCountry.armies - 1000];
   }
 }

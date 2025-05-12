@@ -2,6 +2,8 @@ import { Renderer } from './Renderer';
 import { Action } from './Action';
 import { ActionSpy } from './ActionSpy';
 import { ActionFortify } from './ActionFortify';
+import { showAmountDialog } from './AmountDialog';
+import { ActionAttack } from './ActionAttack';
 
 export class GameGui {
   private state: string;
@@ -20,7 +22,7 @@ export class GameGui {
 
   constructor() {
     this.state = 'initialized';
-    this.actions = [new ActionSpy(), new ActionFortify()];
+    this.actions = [new ActionSpy(), new ActionFortify(), new ActionAttack()];
   }
 
   /**
@@ -111,14 +113,25 @@ export class GameGui {
         btn.style.cursor = 'pointer';
         btn.style.boxShadow = '0 2px 8px rgba(30,32,34,0.13)';
         btn.style.marginBottom = '8px';
-        btn.onclick = () => {
-          const result = action.Act(clickedCountries, this.currentGame.activePlayer, this.currentGame);
+        btn.onclick = async () => {
+          const amountRange = action.RequiresAmount(clickedCountries);
+          let result: string | null = null;
+          if (amountRange) {
+            const [min, max] = amountRange;
+            const selected = await showAmountDialog(min, max, min);
+            if (selected === null) return; // Cancelled
+            result = action.Act(clickedCountries, this.currentGame.activePlayer, this.currentGame, selected);
+          } else {
+            result = action.Act(clickedCountries, this.currentGame.activePlayer, this.currentGame);
+          }
           if (typeof result === 'string' && result !== null) {
             this.showModalMessage(result);
+            this.afterAction();
           } else {
             this.afterAction();
           }
         };
+
         dynamicButtons.push(btn);
       }
     }

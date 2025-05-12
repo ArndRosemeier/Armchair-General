@@ -139,12 +139,12 @@ export function showNewGameDialog(container: HTMLElement): Promise<NewGameDialog
           country.color = c.color;
           return country;
         });
-        // Reconstruct WorldMap from plain data
-        const worldMap = Object.assign(Object.create(Object.getPrototypeOf({})), {
-          getMap: () => map,
-          getCountries: () => reconstructedCountries,
+        // Reconstruct WorldMap from plain data, restoring prototype for methods
+        const worldMap = Object.assign(Object.create(WorldMap.prototype), {
+          map,
+          countries: reconstructedCountries,
         });
-        currentMap = worldMap as any;
+        currentMap = worldMap as WorldMap;
         if (!currentMap) {
           throw new Error('WorldMap is null when rendering map preview.');
         }
