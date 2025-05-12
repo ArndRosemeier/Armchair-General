@@ -5,6 +5,7 @@ import { ActionFortify } from './ActionFortify';
 import { showAmountDialog } from './AmountDialog';
 import { ActionAttack } from './ActionAttack';
 import { ActionCalculateAttack } from './ActionCalculateAttack';
+import { ActionMove } from './ActionMove';
 
 export class GameGui {
   private state: string;
@@ -23,7 +24,7 @@ export class GameGui {
 
   constructor() {
     this.state = 'initialized';
-    this.actions = [new ActionSpy(), new ActionFortify(), new ActionAttack(), new ActionCalculateAttack()];
+    this.actions = [new ActionSpy(), new ActionFortify(), new ActionAttack(), new ActionCalculateAttack(), new ActionMove()];
   }
 
   /**
