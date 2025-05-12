@@ -42,27 +42,7 @@ export class Game {
     }
   }
 
-  /**
-   * Player spies on a country; updates their knowledge for the current turn.
-   */
-  spy(player: Player, country: Country) {
-    const existing = player.knowledge.find(k => k.country === country);
-    const knowledge = {
-      country,
-      gameTurn: this.gameTurn,
-      army: country.armies,
-      income: country.income,
-    };
-    if (existing) {
-      existing.gameTurn = knowledge.gameTurn;
-      existing.army = knowledge.army;
-      existing.income = knowledge.income;
-    } else {
-      player.knowledge.push(knowledge);
-    }
-  }
-
-  /**
+   /**
    * Initializes a new game with the given world map and players.
    * Returns a new Game instance.
    */
