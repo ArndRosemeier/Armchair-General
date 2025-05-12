@@ -549,6 +549,12 @@ export class GameGui {
     endTurnBtn.style.borderRadius = '8px';
     endTurnBtn.style.cursor = 'pointer';
     endTurnBtn.style.boxShadow = '0 2px 8px rgba(30,32,34,0.13)';
+    endTurnBtn.onclick = () => {
+      if (this.currentGame) {
+        this.currentGame.nextTurn();
+        this.renderMainGui(this.rootContainer, this.currentGame);
+      }
+    };
     actionsDiv.appendChild(endTurnBtn);
 
     sidebar.appendChild(actionsDiv);
