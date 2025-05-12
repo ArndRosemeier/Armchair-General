@@ -8,6 +8,14 @@ export interface CountryKnowledge {
   income: number; // observed income at time of spying
 }
 
+export interface CountryInfo {
+  name: string;
+  owner: Player | null;
+  income: number | undefined;
+  army: number | undefined;
+  recency: number | undefined;
+}
+
 export class Player {
   /**
    * Lookup for color names to RGB values
@@ -67,5 +75,33 @@ export class Player {
     this.money = money;
     this.isAI = isAI;
   }
-}
 
+  /**
+   * Returns an info object for the given country, including:
+   * - name: from country
+   * - owner: from country
+   * - income: from country if owned by this player, else from knowledge
+   * - army: from country if owned by this player, else from knowledge
+   * - recency: 0 if owned by this player, else (currentGameTurn - knowledge.gameTurn) or null if no knowledge
+   */
+  getCountryInfo(country: Country, currentGameTurn: number): CountryInfo {
+    if (country.owner === this) {
+      return {
+        name: country.name,
+        owner: country.owner,
+        income: country.income,
+        army: country.armies,
+        recency: 0
+      };
+    } else {
+      const knowledge = this.knowledge.find(k => k.country === country);
+      return {
+        name: country.name,
+        owner: country.owner,
+        income: knowledge ? knowledge.income : undefined,
+        army: knowledge ? knowledge.army : undefined,
+        recency: knowledge ? (currentGameTurn - knowledge.gameTurn) : undefined
+      };
+    }
+  }
+}

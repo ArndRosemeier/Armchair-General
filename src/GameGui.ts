@@ -302,30 +302,6 @@ export class GameGui {
     endTurnBtn.style.boxShadow = '0 2px 8px rgba(30,32,34,0.13)';
     actionsDiv.appendChild(endTurnBtn);
 
-    const spyBtn = document.createElement('button');
-    spyBtn.textContent = 'Spy on Country';
-    spyBtn.style.padding = '12px 0';
-    spyBtn.style.fontSize = '1.1rem';
-    spyBtn.style.background = 'linear-gradient(90deg,#ff9966 0%,#ff5e62 100%)';
-    spyBtn.style.color = '#fff';
-    spyBtn.style.border = 'none';
-    spyBtn.style.borderRadius = '8px';
-    spyBtn.style.cursor = 'pointer';
-    spyBtn.style.boxShadow = '0 2px 8px rgba(30,32,34,0.13)';
-    actionsDiv.appendChild(spyBtn);
-
-    const attackBtn = document.createElement('button');
-    attackBtn.textContent = 'Attack Country';
-    attackBtn.style.padding = '12px 0';
-    attackBtn.style.fontSize = '1.1rem';
-    attackBtn.style.background = 'linear-gradient(90deg,#f7971e 0%,#ffd200 100%)';
-    attackBtn.style.color = '#222';
-    attackBtn.style.border = 'none';
-    attackBtn.style.borderRadius = '8px';
-    attackBtn.style.cursor = 'pointer';
-    attackBtn.style.boxShadow = '0 2px 8px rgba(30,32,34,0.13)';
-    actionsDiv.appendChild(attackBtn);
-
     sidebar.appendChild(actionsDiv);
 
     // Assemble
