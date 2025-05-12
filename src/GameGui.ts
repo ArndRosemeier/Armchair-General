@@ -138,6 +138,20 @@ export class GameGui {
     clickedPanel.style.overflowY = 'auto';
     clickedPanel.innerHTML = '<b>Clicked Countries:</b><br><span id="clicked-country-list">(none)</span>';
 
+    // Panel for displaying country info
+    const countryInfoPanel = document.createElement('div');
+    countryInfoPanel.id = 'country-info-panel';
+    countryInfoPanel.style.background = '#22232a';
+    countryInfoPanel.style.border = '1px solid #555';
+    countryInfoPanel.style.borderRadius = '8px';
+    countryInfoPanel.style.padding = '10px 12px';
+    countryInfoPanel.style.marginBottom = '18px';
+    countryInfoPanel.style.color = '#b3e5fc';
+    countryInfoPanel.style.fontSize = '1.05rem';
+    countryInfoPanel.style.minHeight = '100px';
+    countryInfoPanel.innerHTML = '<b>Country Info</b><br><span style="color:#888">Click a country to view details.</span>';
+
+
     if (mapCanvas) {
       // Only set style width/height for display scaling
       mapCanvas.style.width = '100%';
@@ -164,6 +178,32 @@ export class GameGui {
               const listElem = document.getElementById('clicked-country-list');
               if (listElem) {
                 listElem.innerHTML = this.clickedCountryNames.map((n: string) => `<div>${n}</div>`).join('');
+              }
+              // Show country info in sidebar
+              const infoPanel = document.getElementById('country-info-panel');
+              if (infoPanel && game && game.activePlayer && typeof game.gameTurn === 'number') {
+                const info = game.activePlayer.getCountryInfo(clickedCountry, game.gameTurn);
+                infoPanel.innerHTML = `
+                  <b>Country Info</b><br>
+                  <div><b>Name:</b> ${info.name}</div>
+                  <div><b>Owner:</b> ${info.owner ? info.owner.name : 'None'}</div>
+                  <div><b>Income:</b> ${info.income !== undefined ? info.income : '?'}</div>
+                  <div><b>Army:</b> ${info.army !== undefined ? info.army : '?'}</div>
+                  <div><b>Recency:</b> ${info.recency !== undefined ? info.recency : '?'}</div>
+                `;
+              }
+              // Show last clicked country info in sidebar
+              const lastClickedCountryInfoPanel = document.getElementById('last-clicked-country-info-panel');
+              if (lastClickedCountryInfoPanel && game && game.activePlayer && typeof game.gameTurn === 'number') {
+                const info = game.activePlayer.getCountryInfo(clickedCountry, game.gameTurn);
+                lastClickedCountryInfoPanel.innerHTML = `
+                  <b>Last Clicked Country Info</b><br>
+                  <div><b>Name:</b> ${info.name}</div>
+                  <div><b>Owner:</b> ${info.owner ? info.owner.name : 'None'}</div>
+                  <div><b>Income:</b> ${info.income !== undefined ? info.income : '?'}</div>
+                  <div><b>Army:</b> ${info.army !== undefined ? info.army : '?'}</div>
+                  <div><b>Recency:</b> ${info.recency !== undefined ? info.recency : '?'}</div>
+                `;
               }
               console.log('[GameGui] Clicked country:', clickedCountry.name);
             } else {
@@ -192,6 +232,8 @@ export class GameGui {
     const sidebar = document.createElement('div');
     // Add clicked countries panel at the top of the sidebar
     sidebar.appendChild(clickedPanel);
+    // Add country info panel below
+    sidebar.appendChild(countryInfoPanel);
     // On initial render, fill panel with any previously clicked countries
     setTimeout(() => {
       const listElem = document.getElementById('clicked-country-list');
