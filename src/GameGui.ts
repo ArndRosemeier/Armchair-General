@@ -347,6 +347,10 @@ export class GameGui {
             const value = map[y][x];
             if (value >= 0 && countries[value]) {
               clickedCountry = countries[value];
+              // Counter check: is (x, y) in clickedCountry.coordinates?
+              if (!clickedCountry.coordinates.some(([cx, cy]: [number, number]) => cx === x && cy === y)) {
+                console.warn(`[GameGui] Click at (${x},${y}) is not in coordinates of country: ${clickedCountry.name}`);
+              }
               this.clickedCountryNames.push(clickedCountry.name);
               // Update the panel
               const listElem = document.getElementById('clicked-country-list');
@@ -381,10 +385,7 @@ export class GameGui {
                   <div><b>Recency:</b> ${info.recency !== undefined ? info.recency : '?'}</div>
                 `;
               }
-              console.log('[GameGui] Clicked country:', clickedCountry.name);
-            } else {
-              console.log('[GameGui] No country at click.');
-            }
+            } 
           }
         });
       }
