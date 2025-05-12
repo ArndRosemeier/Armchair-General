@@ -149,9 +149,9 @@ export function showNewGameDialog(container: HTMLElement): Promise<NewGameDialog
           throw new Error('WorldMap is null when rendering map preview.');
         }
         mapCanvas = Renderer.render(currentMap);
+        // Only set style for preview scaling, do not touch attribute width/height
         mapCanvas.style.width = '300px';
         mapCanvas.style.height = '200px';
-        mapCanvas.style.objectFit = 'cover';
         mapCanvas.style.display = 'block';
         spinner.style.display = 'none';
         mapPreviewDiv.appendChild(mapCanvas);

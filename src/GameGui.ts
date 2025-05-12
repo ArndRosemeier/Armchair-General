@@ -119,11 +119,33 @@ export class GameGui {
       mapCanvas = this.getWorldMapCanvas();
     }
     if (mapCanvas) {
+      // Only set style width/height for display scaling
       mapCanvas.style.width = '100%';
       mapCanvas.style.height = '100%';
-      mapCanvas.style.objectFit = 'contain';
       mapCanvas.style.display = 'block';
       mapArea.appendChild(mapCanvas);
+      // Add mouse click detection
+      if (game && game.worldMap) {
+        mapCanvas.addEventListener('mousedown', (e: MouseEvent) => {
+          const mapWidth = mapCanvas.width;
+          const mapHeight = mapCanvas.height;
+          // Use offsetX/Y and scale by client size for accuracy
+          const x = Math.floor(e.offsetX * (mapWidth / mapCanvas.clientWidth));
+          const y = Math.floor(e.offsetY * (mapHeight / mapCanvas.clientHeight));
+          const map = game.worldMap.getMap();
+          const countries = game.worldMap.getCountries();
+          let clickedCountry = null;
+          if (x >= 0 && y >= 0 && y < map.length && x < map[0].length) {
+            const value = map[y][x];
+            if (value >= 0 && countries[value]) {
+              clickedCountry = countries[value];
+              console.log('[GameGui] Clicked country:', clickedCountry.name);
+            } else {
+              console.log('[GameGui] No country at click.');
+            }
+          }
+        });
+      }
     } else {
       const mapPlaceholder = document.createElement('div');
       mapPlaceholder.style.width = '100%';
