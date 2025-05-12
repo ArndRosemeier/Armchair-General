@@ -54,6 +54,46 @@ export class GameGui {
   }
 
   /**
+   * Updates the action buttons area at the bottom of the sidebar based on current actions and clicked countries.
+   */
+  updateActionButtons() {
+    const actionsDiv = document.getElementById('action-buttons-area');
+    if (!actionsDiv) return;
+    // Remove only previously generated action buttons, keep persistent ones
+    Array.from(actionsDiv.children).forEach(child => {
+      if (!(child instanceof HTMLElement)) return;
+      if (!child.classList.contains('persistent-action-btn')) {
+        actionsDiv.removeChild(child);
+      }
+    });
+    if (!this.currentGame || !this.currentGame.players || !this.currentGame.activePlayer) return;
+    const countries = this.currentGame.worldMap ? this.currentGame.worldMap.getCountries() : [];
+    // Get clicked country objects by name
+    const clickedCountries = this.clickedCountryNames.map(name => countries.find((c: any) => c.name === name)).filter(Boolean);
+    for (const action of this.actions) {
+      const buttonText = action.GetButtonText(clickedCountries, this.currentGame.activePlayer);
+      if (buttonText) {
+        const btn = document.createElement('button');
+        btn.textContent = buttonText;
+        btn.style.padding = '12px 0';
+        btn.style.fontSize = '1.1rem';
+        btn.style.background = 'linear-gradient(90deg,#00c3ff 0%,#ffff1c 100%)';
+        btn.style.color = '#222';
+        btn.style.border = 'none';
+        btn.style.borderRadius = '8px';
+        btn.style.cursor = 'pointer';
+        btn.style.boxShadow = '0 2px 8px rgba(30,32,34,0.13)';
+        btn.style.marginBottom = '8px';
+        btn.onclick = () => {
+          action.Act(clickedCountries, this.currentGame.activePlayer);
+          this.afterAction();
+        };
+        actionsDiv.appendChild(btn);
+      }
+    }
+  }
+
+  /**
    * Mark the cached world map as dirty (needs re-render).
    */
   markMapDirty() {
@@ -216,6 +256,8 @@ export class GameGui {
               if (listElem) {
                 listElem.innerHTML = this.clickedCountryNames.map((n: string) => `<div>${n}</div>`).join('');
               }
+              // Update action buttons
+              this.updateActionButtons();
               // Show country info in sidebar
               const infoPanel = document.getElementById('country-info-panel');
               if (infoPanel && game && game.activePlayer && typeof game.gameTurn === 'number') {
@@ -348,6 +390,7 @@ export class GameGui {
 
     // Action buttons
     const actionsDiv = document.createElement('div');
+    actionsDiv.id = 'action-buttons-area';
     actionsDiv.style.display = 'flex';
     actionsDiv.style.flexDirection = 'column';
     actionsDiv.style.gap = '12px';
@@ -355,6 +398,7 @@ export class GameGui {
 
     const newGameBtn = document.createElement('button');
     newGameBtn.textContent = 'New Game';
+    newGameBtn.classList.add('persistent-action-btn');
     newGameBtn.style.padding = '12px 0';
     newGameBtn.style.fontSize = '1.1rem';
     newGameBtn.style.background = 'linear-gradient(90deg,#00c3ff 0%,#ffff1c 100%)';
@@ -371,6 +415,7 @@ export class GameGui {
 
     const endTurnBtn = document.createElement('button');
     endTurnBtn.textContent = 'End Turn';
+    endTurnBtn.classList.add('persistent-action-btn');
     endTurnBtn.style.padding = '12px 0';
     endTurnBtn.style.fontSize = '1.1rem';
     endTurnBtn.style.background = 'linear-gradient(90deg,#43cea2 0%,#185a9d 100%)';
