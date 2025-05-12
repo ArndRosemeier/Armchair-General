@@ -126,7 +126,7 @@ export class ActionAttack extends Action {
     }
   }
 
-  RequiresAmount(countries: Country[]): [number, number] | null {
+  RequiresAmount(countries: Country[], activePlayer: Player, currentGame: Game ): [number, number] | null {
     if (countries.length < 2) return null;
     const fromCountry = countries[countries.length - 2];
     if (!fromCountry || typeof fromCountry.armies !== 'number' || fromCountry.armies <= 1) return null;

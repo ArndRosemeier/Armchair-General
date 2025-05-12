@@ -53,7 +53,7 @@ export class ActionSpy extends Action {
     return null;
   }
 
-  RequiresAmount(countries: Country[]): [number, number] | null {
+  RequiresAmount(countries: Country[], activePlayer: Player, currentGame: Game): [number, number] | null {
     return null;
   }
 }

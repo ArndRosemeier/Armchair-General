@@ -6,6 +6,7 @@ import { showAmountDialog } from './AmountDialog';
 import { ActionAttack } from './ActionAttack';
 import { ActionCalculateAttack } from './ActionCalculateAttack';
 import { ActionMove } from './ActionMove';
+import { ActionBuyArmies } from './ActionBuyArmies';
 
 export class GameGui {
   private state: string;
@@ -24,7 +25,7 @@ export class GameGui {
 
   constructor() {
     this.state = 'initialized';
-    this.actions = [new ActionSpy(), new ActionFortify(), new ActionAttack(), new ActionCalculateAttack(), new ActionMove()];
+    this.actions = [new ActionSpy(), new ActionFortify(), new ActionAttack(), new ActionCalculateAttack(), new ActionMove(), new ActionBuyArmies()];
   }
 
   /**
@@ -116,7 +117,7 @@ export class GameGui {
         btn.style.boxShadow = '0 2px 8px rgba(30,32,34,0.13)';
         btn.style.marginBottom = '8px';
         btn.onclick = async () => {
-          const amountRange = action.RequiresAmount(clickedCountries);
+          const amountRange = action.RequiresAmount(clickedCountries, this.currentGame.activePlayer, this.currentGame);
           let result: string | null = null;
           if (amountRange) {
             const [min, max] = amountRange;

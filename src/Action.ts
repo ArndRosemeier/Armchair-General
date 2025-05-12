@@ -24,7 +24,7 @@ export abstract class Action {
    * @param countries List of Country objects currently selected
    * Override in derived classes if needed.
    */
-  RequiresAmount(countries: Country[]): [number, number] | null {
+  RequiresAmount(countries: Country[], activePlayer: Player, currentGame: Game): [number, number] | null {
     return null;
   }
 }

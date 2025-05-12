@@ -35,6 +35,14 @@ export function showAmountDialog(min: number, max: number, initial: number = min
     label.style.marginBottom = '8px';
     box.appendChild(label);
 
+    // Max info
+    const maxInfo = document.createElement('div');
+    maxInfo.textContent = `Maximum: ${max.toLocaleString()}`;
+    maxInfo.style.fontSize = '1rem';
+    maxInfo.style.color = '#555';
+    maxInfo.style.marginBottom = '4px';
+    box.appendChild(maxInfo);
+
     // Amount display
     let amount = Math.max(min, Math.min(max, initial));
     const amountDisplay = document.createElement('div');

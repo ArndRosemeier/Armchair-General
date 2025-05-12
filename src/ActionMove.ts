@@ -55,7 +55,7 @@ export class ActionMove extends Action {
   /**
    * Requires an amount: at least 1, at most all but one army in the source country.
    */
-  RequiresAmount(countries: Country[]): [number, number] | null {
+  RequiresAmount(countries: Country[], activePlayer: Player, currentGame: Game): [number, number] | null {
     if (countries.length < 2) return null;
     const fromCountry = countries[countries.length - 2];
     if (!fromCountry || typeof fromCountry.armies !== 'number' || fromCountry.armies <= 1) return null;

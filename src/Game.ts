@@ -7,7 +7,7 @@ import { Country } from './Country';
  * Manages players, world map, turns, and active player.
  */
 export class Game {
-  static readonly armyCost = 100000;
+  static readonly armyCost = 100;
   static readonly spyCost = 200000;
   static readonly spyFortifiedCost = 1000000;
   static readonly initialPlayerMoney = 10000000;
