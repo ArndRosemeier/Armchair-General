@@ -16,6 +16,8 @@ export interface CountryInfo {
   recency: number | undefined;
 }
 
+import { AI } from './AI';
+
 export class Player {
   static readonly ACTIONS_PER_TURN = 5;
   actionsLeft: number = Player.ACTIONS_PER_TURN;
@@ -61,9 +63,9 @@ export class Player {
    */
   isAI: boolean;
   /**
-   * The AI strategy for this player, if AI. Undefined for human players.
+   * The AI instance for this player, if AI. Undefined for human players.
    */
-  ai?: Strategy;
+  AI?: AI;
   /**
    * Player's available money.
    */

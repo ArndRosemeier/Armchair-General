@@ -1,6 +1,7 @@
 import { WorldMap } from './WorldMap';
 import { Player } from './Player';
 import { Country } from './Country';
+import { AI } from './AI';
 
 /**
  * Core game logic class for RiskTs.
@@ -56,6 +57,10 @@ export class Game {
       player.money = Game.initialPlayerMoney;
       player.homeCountry = null;
       player.ownedCountries = [];
+      // Assign AI instance if player is AI
+      if (player.isAI) {
+        player.AI = new AI(player, null as any); // game will be assigned after Game is constructed
+      }
     }
 
     // 2. Set income for each country (500000 to 2500000, multiple of 1000)
@@ -117,6 +122,14 @@ export class Game {
         country.armies = army;
       }
     }
-    return new Game(worldMap, players);
+    const game = new Game(worldMap, players);
+    // Now set the game reference on each AI instance
+    for (const player of players) {
+      if (player.isAI && player.AI) {
+        player.AI.game = game;
+        player.AI.player = player;
+      }
+    }
+    return game;
   }
 }
