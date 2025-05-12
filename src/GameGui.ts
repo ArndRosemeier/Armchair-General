@@ -1,4 +1,6 @@
 import { Renderer } from './Renderer';
+import { Action } from './Action';
+import { ActionSpy } from './ActionSpy';
 
 export class GameGui {
   private state: string;
@@ -12,8 +14,43 @@ export class GameGui {
   private worldMapCanvas: HTMLCanvasElement | null = null;
   private mapDirty: boolean = true;
 
+  // Array of actions
+  public actions: Action[];
+
   constructor() {
     this.state = 'initialized';
+    this.actions = [new ActionSpy()];
+  }
+
+  /**
+   * Refreshes the country info panel for the last clicked country and forces a redraw of the world map.
+   */
+  afterAction() {
+    // Refresh country info panel for the last clicked country
+    if (this.clickedCountryNames.length > 0 && this.currentGame && this.currentGame.worldMap) {
+      const lastCountryName = this.clickedCountryNames[this.clickedCountryNames.length - 1];
+      const countries = this.currentGame.worldMap.getCountries();
+      const clickedCountry = countries.find((c: any) => c.name === lastCountryName);
+      if (clickedCountry && this.currentGame.activePlayer && typeof this.currentGame.gameTurn === 'number') {
+        const info = this.currentGame.activePlayer.getCountryInfo(clickedCountry, this.currentGame.gameTurn);
+        const infoPanel = document.getElementById('country-info-panel');
+        if (infoPanel) {
+          infoPanel.innerHTML = `
+            <b>Country Info</b><br>
+            <div><b>Name:</b> ${info.name}</div>
+            <div><b>Owner:</b> ${info.owner ? info.owner.name : 'None'}</div>
+            <div><b>Income:</b> ${info.income !== undefined ? info.income : '?'}</div>
+            <div><b>Army:</b> ${info.army !== undefined ? info.army : '?'}</div>
+            <div><b>Recency:</b> ${info.recency !== undefined ? info.recency : '?'}</div>
+          `;
+        }
+      }
+    }
+    // Force redraw of the world map
+    this.markMapDirty();
+    if (this.rootContainer) {
+      this.renderMainGui(this.rootContainer, this.currentGame);
+    }
   }
 
   /**
