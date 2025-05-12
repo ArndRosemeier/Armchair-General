@@ -488,6 +488,13 @@ export class GameGui {
         li.style.display = 'flex';
         li.style.alignItems = 'center';
         li.style.marginBottom = '8px';
+        // Highlight the active player with a glowy box
+        if (player === game.activePlayer) {
+          li.style.boxShadow = '0 0 16px 4px #ffd700, 0 0 4px 2px #fff';
+          li.style.border = '2px solid #ffd700';
+          li.style.borderRadius = '12px';
+          li.style.background = 'rgba(255, 215, 0, 0.10)';
+        }
         const colorDot = document.createElement('span');
         colorDot.style.display = 'inline-block';
         colorDot.style.width = '16px';
