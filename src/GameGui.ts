@@ -60,9 +60,12 @@ export class GameGui {
     const actionsDiv = document.getElementById('action-buttons-area');
     if (!actionsDiv) return;
     // Remove only previously generated action buttons, keep persistent ones
+    const persistentButtons: HTMLElement[] = [];
     Array.from(actionsDiv.children).forEach(child => {
       if (!(child instanceof HTMLElement)) return;
-      if (!child.classList.contains('persistent-action-btn')) {
+      if (child.classList.contains('persistent-action-btn')) {
+        persistentButtons.push(child);
+      } else {
         actionsDiv.removeChild(child);
       }
     });
@@ -70,6 +73,8 @@ export class GameGui {
     const countries = this.currentGame.worldMap ? this.currentGame.worldMap.getCountries() : [];
     // Get clicked country objects by name
     const clickedCountries = this.clickedCountryNames.map(name => countries.find((c: any) => c.name === name)).filter(Boolean);
+    // Create dynamic action buttons
+    const dynamicButtons: HTMLElement[] = [];
     for (const action of this.actions) {
       const buttonText = action.GetButtonText(clickedCountries, this.currentGame.activePlayer);
       if (buttonText) {
@@ -85,12 +90,83 @@ export class GameGui {
         btn.style.boxShadow = '0 2px 8px rgba(30,32,34,0.13)';
         btn.style.marginBottom = '8px';
         btn.onclick = () => {
-          action.Act(clickedCountries, this.currentGame.activePlayer);
-          this.afterAction();
+          const result = action.Act(clickedCountries, this.currentGame.activePlayer);
+          if (typeof result === 'string' && result !== null) {
+            this.showModalMessage(result);
+          } else {
+            this.afterAction();
+          }
         };
-        actionsDiv.appendChild(btn);
+        dynamicButtons.push(btn);
       }
     }
+    // Insert dynamic buttons above persistent ones
+    if (dynamicButtons.length && persistentButtons.length) {
+      // Add a gap before persistent buttons
+      const gap = document.createElement('div');
+      gap.style.height = '16px';
+      gap.style.width = '100%';
+      actionsDiv.insertBefore(gap, persistentButtons[0]);
+      dynamicButtons.forEach(btn => actionsDiv.insertBefore(btn, gap));
+    } else if (dynamicButtons.length) {
+      dynamicButtons.forEach(btn => actionsDiv.appendChild(btn));
+    }
+  }
+
+  /**
+   * Shows a modal messagebox with the given message.
+   */
+  showModalMessage(message: string) {
+    let modal = document.getElementById('gamegui-modal-messagebox');
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = 'gamegui-modal-messagebox';
+      modal.style.position = 'fixed';
+      modal.style.left = '0';
+      modal.style.top = '0';
+      modal.style.width = '100vw';
+      modal.style.height = '100vh';
+      modal.style.background = 'rgba(0,0,0,0.5)';
+      modal.style.display = 'flex';
+      modal.style.alignItems = 'center';
+      modal.style.justifyContent = 'center';
+      modal.style.zIndex = '9999';
+      const box = document.createElement('div');
+      box.style.background = '#fff';
+      box.style.padding = '32px 40px';
+      box.style.borderRadius = '12px';
+      box.style.boxShadow = '0 2px 16px rgba(0,0,0,0.2)';
+      box.style.maxWidth = '90vw';
+      box.style.maxHeight = '80vh';
+      box.style.display = 'flex';
+      box.style.flexDirection = 'column';
+      box.style.alignItems = 'center';
+      box.style.gap = '24px';
+      const msgElem = document.createElement('div');
+      msgElem.id = 'gamegui-modal-messagebox-text';
+      msgElem.style.fontSize = '1.2rem';
+      msgElem.style.color = '#222';
+      box.appendChild(msgElem);
+      const closeBtn = document.createElement('button');
+      closeBtn.textContent = 'OK';
+      closeBtn.style.marginTop = '12px';
+      closeBtn.style.padding = '8px 24px';
+      closeBtn.style.fontSize = '1.1rem';
+      closeBtn.style.border = 'none';
+      closeBtn.style.borderRadius = '6px';
+      closeBtn.style.background = 'linear-gradient(90deg,#ff9966 0%,#ff5e62 100%)';
+      closeBtn.style.color = '#fff';
+      closeBtn.style.cursor = 'pointer';
+      closeBtn.onclick = () => {
+        if (modal && modal.parentNode) modal.parentNode.removeChild(modal);
+      };
+      box.appendChild(closeBtn);
+      modal.appendChild(box);
+      document.body.appendChild(modal);
+    }
+    const msgElem = document.getElementById('gamegui-modal-messagebox-text');
+    if (msgElem) msgElem.textContent = message;
+    modal.style.display = 'flex';
   }
 
   /**

@@ -1,4 +1,5 @@
 import { Action } from './Action';
+import { Game } from './Game';
 import { Country } from './Country';
 import { Player } from './Player';
 
@@ -14,12 +15,41 @@ export class ActionSpy extends Action {
     return `Spy on ${lastCountry.name}`;
   }
 
-  Act(countries: Country[], activePlayer: Player): void {
+  Act(countries: Country[], activePlayer: Player): string | null {
+    // 1. Check if at least one country is given
     if (countries.length === 0) {
-      console.log('[ActionSpy] No country selected to spy on.');
-      return;
+      return 'Please select a country to spy on.';
     }
-    const lastCountry = countries[countries.length - 1];
-    console.log(`[ActionSpy] ${activePlayer.name} spies on ${lastCountry.name}`);
+    // 2. Take the latest country as the target
+    const target = countries[countries.length - 1];
+    // 3. Check if player has enough money
+    // Use static import for Game
+    if (activePlayer.money < Game.spyCost) {
+      return `Not enough money to spy. You need $${Game.spyCost}.`;
+    }
+    // 4. Check if country is already in knowledge and was spied on this turn
+    const knowledge = activePlayer.knowledge.find(k => k.country === target);
+    // @ts-ignore
+    const currentGame = globalThis.currentGame || (window as any)?.game;
+    const gameTurn = currentGame?.gameTurn ?? (activePlayer as any).gameTurn;
+    if (knowledge && knowledge.gameTurn === gameTurn) {
+      return 'You already have recent information about this country.';
+    }
+    // 5. Deduct spycost and update knowledge
+    activePlayer.money -= Game.spyCost;
+    const newKnowledge = {
+      country: target,
+      gameTurn: gameTurn,
+      army: target.armies,
+      income: target.income
+    };
+    if (knowledge) {
+      knowledge.gameTurn = newKnowledge.gameTurn;
+      knowledge.army = newKnowledge.army;
+      knowledge.income = newKnowledge.income;
+    } else {
+      activePlayer.knowledge.push(newKnowledge);
+    }
+    return null;
   }
 }

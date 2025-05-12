@@ -13,6 +13,7 @@ export abstract class Action {
    * Perform the action, given a list of countries and the active player.
    * @param countries List of Country objects
    * @param activePlayer The active player
+   * @returns A string describing the result or outcome of the action.
    */
-  abstract Act(countries: Country[], activePlayer: Player): void;
+  abstract Act(countries: Country[], activePlayer: Player): string | null;
 }
