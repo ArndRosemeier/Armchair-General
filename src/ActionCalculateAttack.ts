@@ -18,6 +18,11 @@ export class ActionCalculateAttack extends Action {
     if (fromCountry.owner !== activePlayer || fromCountry === toCountry) {
       return null;
     }
+    // Additional requirement: player must have knowledge of the target country
+    const knowsTarget = activePlayer.knowledge && activePlayer.knowledge.some(k => k.country === toCountry);
+    if (!knowsTarget) {
+      return null;
+    }
     const isNeighbor = fromCountry.neighbors.includes(toCountry);
     const isNaval = fromCountry.oceanBorder.length > 0 && toCountry.oceanBorder.length > 0;
     if (!isNeighbor && !isNaval) {
@@ -55,9 +60,16 @@ export class ActionCalculateAttack extends Action {
     if (amount <= 0 || amount >= fromCountry.armies) {
       return 'Invalid number of armies committed.';
     }
+    // Use getCountryInfo to get info from the target country
+    const info = activePlayer.getCountryInfo(toCountry, currentGame.gameTurn);
     // Calculate and return chance only
-    const chance = ActionAttack.AttackChance(fromCountry, toCountry, amount, currentGame);
-    return `Attack chance: ${(chance * 100).toFixed(2)}%`;
+    const dist = currentGame.worldMap.distance(fromCountry, toCountry);
+    const chance = ActionAttack.AttackChance(fromCountry.armies, info.army || 0, dist || 0, toCountry.fortified, currentGame);
+    let result = `Attack chance: ${(chance * 100).toFixed(2)}%`;
+    if (info.recency && info.recency > 0) {
+      result += `\nWarning: Information about ${toCountry.name} may be outdated (last spied ${info.recency} turn(s) ago).`;
+    }
+    return result;
   }
 
   RequiresAmount(countries: Country[], activePlayer: Player, currentGame: Game): [number, number] | null {

@@ -54,7 +54,7 @@ export class ActionAttack extends Action {
       return 'Invalid number of armies committed.';
     }
     // Calculate chance
-    const chance = ActionAttack.AttackChance(fromCountry, toCountry, amount, currentGame);
+    const chance = ActionAttack.AttackChance(fromCountry.armies, toCountry.armies, currentGame.worldMap.distance(fromCountry, toCountry) || 0, toCountry.fortified, currentGame);
     const roll = Math.random();
     const delta = Math.sqrt(Math.abs(roll - chance));
     let resultMsg = '';
@@ -101,13 +101,10 @@ export class ActionAttack extends Action {
    * @param game The game instance (for worldMap)
    * @returns Chance of success (0 to 1)
    */
-  static AttackChance(attacker: Country, defender: Country, attackerCommittedArmy: number, game: Game): number {
-    let attackForce = attackerCommittedArmy;
-    let defenseForce = defender.armies;
-    const dist = game.worldMap.distance(attacker, defender);
+  static AttackChance(attackForce: number, defenseForce: number, dist: number, fortified: boolean, game: Game): number {
     if (dist === null) return 0;
     defenseForce *= (dist / 100);
-    if (defender.fortified) defenseForce *= 2;
+    if (fortified) defenseForce *= 2;
 
     // Smooth interpolation:
     // - If attackForce >= 3 * defenseForce, chance = 1
