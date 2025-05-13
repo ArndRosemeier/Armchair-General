@@ -284,6 +284,15 @@ export class GameGui {
       this.markMapDirty();
       this.renderMainGui(this.rootContainer as HTMLElement, this.currentGame);
     }
+    // After AI is done, end the turn just like the end turn button, but do not recurse
+    if (this.currentGame) {
+      this.currentGame.nextTurn();
+      this.renderMainGui(this.rootContainer as HTMLElement, this.currentGame);
+      // Only call turnStarted again if the next player is also AI
+      if (this.currentGame.activePlayer.isAI) {
+        setTimeout(() => this.turnStarted(), 0);
+      }
+    }
   }
 
   async startNewGame() {
