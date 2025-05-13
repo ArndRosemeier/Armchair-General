@@ -17,6 +17,7 @@ export class AI {
   static readonly ATTACK_COMMIT = 0.8;
   player: Player;
   game: Game;
+  public actionPlan: Opportunity[] = [];
 
   constructor(player: Player, game: Game) {
     this.player = player;
@@ -92,18 +93,19 @@ export class AI {
    */
   takeAction(): boolean {
     if (this.player.actionsLeft <= 0) return false;
-    const opportunity = this.findBestOpportunity();
-    if (!opportunity) return false;
-    console.log('Executing opportunity:', {
-      countries: opportunity.countries.map(c => c.name),
-      amount: opportunity.amount,
-      action: opportunity.action.constructor.name,
-      score: opportunity.score
-    });
-    const result = opportunity.action.Act(opportunity.countries, this.player, this.game, opportunity.amount);
-    if (result) {
-      console.log('Action result:', result);
+    // With a chance of 0.15, do PlanSurpriseAttack if actionsLeft is 4 or more
+    if (this.player.actionsLeft >= 4 && Math.random() < 0.15) {
+      this.PlanSurpriseAttack();
+      return true;
     }
+    let opportunity: Opportunity | null = null;
+    if (this.actionPlan.length > 0) {
+      opportunity = this.actionPlan.shift()!;
+    } else {
+      opportunity = this.findBestOpportunity();
+    }
+    if (!opportunity) return false;
+    const result = opportunity.action.Act(opportunity.countries, this.player, this.game, opportunity.amount);
     this.player.useAction();
     return true;
   }
@@ -341,5 +343,118 @@ export class AI {
     }
     nonOwned.sort((a, b) => a.distance - b.distance);
     return nonOwned;
+  }
+
+  /**
+   * Attempts to build an attack plan for a juicy target. If a plan is found that results in >70% attack chance, it is queued in actionPlan.
+   * @param target The enemy country to attack
+   */
+  MakeAttackPlan(target: Country): void {
+    const ActionAttackClass = ActionAttack;
+    const ActionMoveClass = ActionMove;
+    const ActionBuyArmiesClass = ActionBuyArmies;
+    const owned = this.player.ownedCountries;
+    if (owned.length === 0) return;
+    // Find closest owned country to target
+    let minDist = Infinity;
+    let closest: Country | null = null;
+    for (const c of owned) {
+      const d = this.game.worldMap.distance(c, target);
+      if (d !== null && d < minDist) {
+        minDist = d;
+        closest = c;
+      }
+    }
+    if (!closest) return;
+    // Simulate up to 1 buy and 2 moves to get armies to closest
+    let simulatedArmies = closest.armies;
+    let simulatedMoney = this.player.money;
+    const plan: Opportunity[] = [];
+    // 1. Try to buy armies if possible
+    const buyAction = new ActionBuyArmiesClass();
+    const armyCost = Game.armyCost;
+    const maxBuy = Math.floor(simulatedMoney / armyCost);
+    if (maxBuy > 0) {
+      const roundedBuy = Math.floor(maxBuy / 1000) * 1000;
+      if (roundedBuy > 0) {
+        plan.push(new Opportunity([closest], roundedBuy, buyAction, 1));
+        simulatedArmies += roundedBuy;
+        simulatedMoney -= roundedBuy * armyCost;
+      }
+    }
+    // 2. Try to move armies from up to 2 other owned countries (not closest)
+    const moveAction = new ActionMoveClass();
+    let moves = 0;
+    let tempArmies = simulatedArmies;
+    // Sort donors by army size descending, exclude closest
+    const donorCandidates = owned.filter(c => c !== closest).sort((a, b) => b.armies - a.armies);
+    for (const donor of donorCandidates) {
+      if (moves >= 2) break;
+      const moveDist = this.game.worldMap.distance(donor, closest);
+      if (moveDist !== null && donor.armies > 1000) {
+        const moveAmount = Math.floor((donor.armies - 1000) / 1000) * 1000;
+        if (moveAmount > 0) {
+          plan.push(new Opportunity([donor, closest], moveAmount, moveAction, 1));
+          tempArmies += moveAmount;
+          moves++;
+        }
+      }
+    }
+    // 3. Simulate attack chance
+    const defenseForce = this.countryDefenseEstimate(target);
+    const dist = this.game.worldMap.distance(closest, target) || 1;
+    const attackForce = Math.floor(tempArmies * AI.ATTACK_COMMIT / 1000) * 1000;
+    const chance = ActionAttackClass.AttackChance(
+      attackForce,
+      defenseForce,
+      dist,
+      target.fortified,
+      this.game
+    );
+    if (chance > 0.7 && attackForce >= 1000) {
+      // Add attack opportunity
+      const attackAction = new ActionAttackClass();
+      plan.push(new Opportunity([closest, target], attackForce, attackAction, chance * 100));
+      // Queue the plan
+      this.actionPlan.push(...plan);
+    }
+  }
+
+  /**
+   * Plans a surprise attack: first tries the weakest unoccupied country, then the weakest opponent country.
+   */
+  PlanSurpriseAttack(): void {
+    const allCountries = this.game.worldMap.getCountries();
+    // 1. Find unoccupied country with minimal defense estimate
+    let minUnoccDef = Infinity;
+    let bestUnocc: Country | null = null;
+    for (const c of allCountries) {
+      if (!c.owner) {
+        const def = this.countryDefenseEstimate(c);
+        if (def < minUnoccDef) {
+          minUnoccDef = def;
+          bestUnocc = c;
+        }
+      }
+    }
+    if (bestUnocc) {
+      this.MakeAttackPlan(bestUnocc);
+      return;
+    }
+    // 2. Find opponent-owned country with minimal defense estimate
+    let minOppDef = Infinity;
+    let bestOpp: Country | null = null;
+    for (const c of allCountries) {
+      if (c.owner && c.owner !== this.player) {
+        const def = this.countryDefenseEstimate(c);
+        if (def < minOppDef) {
+          minOppDef = def;
+          bestOpp = c;
+        }
+      }
+    }
+    if (bestOpp) {
+      this.MakeAttackPlan(bestOpp);
+    }
   }
 }
