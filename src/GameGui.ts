@@ -269,6 +269,22 @@ export class GameGui {
     window.removeEventListener('resize', this._onResize);
   }
 
+  /**
+   * Called whenever a new turn starts (after startTurn is called on the active player).
+   */
+  turnStarted() {
+    // If the active player is human, do nothing
+    if (!this.currentGame?.activePlayer?.isAI) return;
+    // If the active player is AI, let it act until out of actions
+    const ai = this.currentGame.activePlayer.AI;
+    if (!ai) return;
+    let acted = true;
+    while (acted) {
+      acted = ai.takeAction();
+      this.renderMainGui(this.rootContainer as HTMLElement, this.currentGame);
+    }
+  }
+
   async startNewGame() {
     // Always use the root container for the dialog
     const container = this.rootContainer!;
@@ -294,6 +310,11 @@ export class GameGui {
       this.markMapDirty();
       this.getWorldMapCanvas(); // Render and cache the map after game start
       this.renderMainGui(container, this.currentGame);
+      // Start the first player's turn
+      if (this.currentGame && this.currentGame.players.length > 0) {
+        this.currentGame.activePlayer.startTurn();
+        this.turnStarted();
+      }
     } catch (err) {
       console.error('NewGameDialog error or cancellation:', err);
     }
@@ -564,7 +585,8 @@ export class GameGui {
     endTurnBtn.onclick = () => {
       if (this.currentGame) {
         this.currentGame.nextTurn();
-        this.renderMainGui(this.rootContainer, this.currentGame);
+        this.renderMainGui(this.rootContainer as HTMLElement, this.currentGame);
+        this.turnStarted();
       }
     };
     actionsDiv.appendChild(endTurnBtn);

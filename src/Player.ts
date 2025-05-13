@@ -161,4 +161,12 @@ export class Player {
   totalArmies(): number {
     return this.ownedCountries.reduce((sum, country) => sum + (country.armies ?? 0), 0);
   }
+
+  /**
+   * Called whenever a player starts a turn. Resets actions and can be extended for per-turn logic.
+   */
+  startTurn() {
+    this.resetActions();
+    // Add any other per-turn initialization logic here if needed
+  }
 }

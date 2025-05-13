@@ -82,7 +82,7 @@ export class AI {
    * Main method for AI to take its turn. Finds and executes the best opportunity if actions remain.
    * Returns true if an action was taken, false otherwise.
    */
-  takeTurn(): boolean {
+  takeAction(): boolean {
     if (this.player.actionsLeft <= 0) return false;
     const opportunity = this.findBestOpportunity();
     if (!opportunity) return false;

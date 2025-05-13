@@ -24,6 +24,10 @@ export class Game {
     this.players = players;
     this.gameTurn = 1;
     this.activePlayerIndex = 0;
+    // Start the first player's turn
+    if (this.players.length > 0) {
+      this.activePlayer.startTurn();
+    }
   }
 
   /**
@@ -52,10 +56,8 @@ export class Game {
       }
       return true; // Keep in list
     });
-    // Reset action limit for all players (or just active player if preferred)
-    for (const player of this.players) {
-      player.resetActions();
-    }
+    // Start the new active player's turn
+    this.activePlayer.startTurn();
   }
 
    /**
