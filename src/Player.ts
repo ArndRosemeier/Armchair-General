@@ -75,6 +75,10 @@ export class Player {
    * Each entry is a country and the turn it was spied upon.
    */
   knowledge: CountryKnowledge[];
+  /**
+   * List of planned fortifications: [Country, int]
+   */
+  plannedFortifications: [Country, number][] = [];
 
   constructor(
     name: string,
@@ -142,5 +146,12 @@ export class Player {
         recency: knowledge ? (currentGameTurn - knowledge.gameTurn) : undefined
       };
     }
+  }
+
+  /**
+   * Returns the total income from all owned countries.
+   */
+  totalIncome(): number {
+    return this.ownedCountries.reduce((sum, country) => sum + (country.income ?? 0), 0);
   }
 }

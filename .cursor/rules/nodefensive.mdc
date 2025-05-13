@@ -1,0 +1,7 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+Never use defensive programming. Always use the most restrictive types for the occasion. Errors should throw and not be silenced.
+

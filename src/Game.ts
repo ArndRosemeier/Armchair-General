@@ -37,10 +37,21 @@ export class Game {
    * Advances the game to the next player's turn, incrementing gameTurn if needed.
    */
   nextTurn() {
+    // Add total income to the current active player's money before changing turn
+    this.activePlayer.money += this.activePlayer.totalIncome();
     this.activePlayerIndex = (this.activePlayerIndex + 1) % this.players.length;
     if (this.activePlayerIndex === 0) {
       this.gameTurn++;
     }
+    // Process planned fortifications for the new active player
+    const player = this.activePlayer;
+    player.plannedFortifications = player.plannedFortifications.filter(([country, dueTurn]) => {
+      if (dueTurn === this.gameTurn) {
+        country.fortified = true;
+        return false; // Remove from list
+      }
+      return true; // Keep in list
+    });
     // Reset action limit for all players (or just active player if preferred)
     for (const player of this.players) {
       player.resetActions();

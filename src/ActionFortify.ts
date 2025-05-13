@@ -30,7 +30,7 @@ export class ActionFortify extends Action {
       return `Not enough money to fortify. You need $${Game.fortifyCost}.`;
     }
     activePlayer.money -= Game.fortifyCost;
-    target.fortified = true;
+    activePlayer.plannedFortifications.push([target, currentGame.gameTurn + 2]);
     return null;
   }
 
