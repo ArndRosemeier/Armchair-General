@@ -154,4 +154,11 @@ export class Player {
   totalIncome(): number {
     return this.ownedCountries.reduce((sum, country) => sum + (country.income ?? 0), 0);
   }
+
+  /**
+   * Returns the total army count from all owned countries.
+   */
+  totalArmies(): number {
+    return this.ownedCountries.reduce((sum, country) => sum + (country.armies ?? 0), 0);
+  }
 }

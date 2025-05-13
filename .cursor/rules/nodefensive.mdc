@@ -3,5 +3,5 @@ description:
 globs: 
 alwaysApply: true
 ---
-Never use defensive programming. Always use the most restrictive types for the occasion. Errors should throw and not be silenced.
+Do not use defensive programming of any kind. No silent errors and avoid all purpose variable types. Programm for easy debuggability, errors need to be visible and loud.
 

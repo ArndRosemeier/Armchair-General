@@ -61,12 +61,17 @@ export class ActionAttack extends Action {
     fromCountry.armies -= amount;
     if (roll < chance) {
       // Attack successful
+      const previousOwner = toCountry.owner;
+      if (previousOwner) {
+        previousOwner.ownedCountries = previousOwner.ownedCountries.filter(c => c !== toCountry);
+      }
       toCountry.owner = activePlayer;
+      activePlayer.ownedCountries.push(toCountry);
       // Defenders obliterated, attackers occupy with portion of amount based on delta
       // The closer the roll to chance, the fewer attackers remain
       // E.g., if delta is small, more attackers lost
       // Let's use: survivors = Math.max(1, Math.round(amount * delta))
-      let survivors = Math.max(1, Math.round(amount * delta));
+      let survivors = Math.max(1, Math.round(amount * Math.sqrt(delta)));
       // Round survivors to nearest 1000, minimum 1000 if any survive
       if (survivors > 0) {
         survivors = Math.max(1000, Math.round(survivors / 1000) * 1000);
@@ -77,7 +82,7 @@ export class ActionAttack extends Action {
       // Attack repelled
       // All attackers lost, defenders diminished by portion based on delta
       // defenders lost = Math.round(toCountry.armies * delta)
-      let defendersLost = Math.round(toCountry.armies * delta);
+      let defendersLost = Math.round(toCountry.armies * Math.sqrt(delta));
       // Round defendersLost to nearest 1000, minimum 1000 if any lost
       if (defendersLost > 0) {
         defendersLost = Math.max(1000, Math.round(defendersLost / 1000) * 1000);

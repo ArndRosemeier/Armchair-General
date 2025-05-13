@@ -31,7 +31,7 @@ export class ActionFortify extends Action {
     }
     activePlayer.money -= Game.fortifyCost;
     activePlayer.plannedFortifications.push([target, currentGame.gameTurn + 2]);
-    return null;
+    return `Fortification planned for ${target.name} on turn ${currentGame.gameTurn + 2}.`;
   }
 
   RequiresAmount(countries: Country[], activePlayer: Player, currentGame: Game): [number, number] | null {
