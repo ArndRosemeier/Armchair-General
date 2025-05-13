@@ -53,7 +53,7 @@ export class AI {
         // Dismiss if opponent owned and knowledge is not stale
         if (knowledge && (this.game.gameTurn - knowledge.gameTurn) <= 3) continue;
       }
-      const score = 2000 - Math.sqrt(distance);
+      const score = 3000 - Math.sqrt(distance);
       if (score > 0) {
         const spyCost = country.fortified ? Game.spyFortifiedCost : Game.spyCost;
         if (this.player.money >= spyCost) {
@@ -233,9 +233,9 @@ export class AI {
     const opportunities: Opportunity[] = [];
     const unfortifiedCount = this.player.ownedCountries.filter(c => !c.fortified).length;
     for (const country of this.player.ownedCountries) {
-      if (!country.fortified) {
+      if (country.canBeFortified()) {
         if (this.player.money >= Game.fortifyCost) {
-          let score = country.income / 1000;
+          let score = country.income / 100;
           score *= unfortifiedCount;
           opportunities.push(new Opportunity([country], 0, action, score));
         }
@@ -314,16 +314,6 @@ export class AI {
     allOpportunities.push(...this.FindMoveOpportunities(moveAction));
     allOpportunities.push(...this.FindFortifyOpportunities(fortifyAction));
     allOpportunities.push(...this.FindBuyOpportunities());
-
-    // Log all opportunities
-    for (const opp of allOpportunities) {
-      console.log('Opportunity:', {
-        countries: opp.countries.map(c => c.name),
-        amount: opp.amount,
-        action: opp.action.constructor.name,
-        score: opp.score
-      });
-    }
 
     // Return the best opportunity
     if (allOpportunities.length === 0) return null;

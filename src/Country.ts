@@ -55,5 +55,16 @@ export class Country {
     this._center = [sumX / this.coordinates.length, sumY / this.coordinates.length];
     return this._center;
   }
+
+  canBeFortified(): boolean {
+    if (this.fortified) return false;
+    if (this.owner) {
+      // plannedFortifications: [Country, number][]
+      for (const [country, _] of this.owner.plannedFortifications) {
+        if (country === this) return false;
+      }
+    }
+    return true;
+  }
 }
 

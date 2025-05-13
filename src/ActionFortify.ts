@@ -26,6 +26,9 @@ export class ActionFortify extends Action {
       return 'Please select a country to fortify.';
     }
     const target = countries[countries.length - 1];
+    if (!target.canBeFortified()) {
+      return `${target.name} cannot be fortified.`;
+    }
     if (activePlayer.money < Game.fortifyCost) {
       return `Not enough money to fortify. You need $${Game.fortifyCost}.`;
     }
