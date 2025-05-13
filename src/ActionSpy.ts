@@ -24,8 +24,9 @@ export class ActionSpy extends Action {
     // 2. Take the latest country as the target
     const target = countries[countries.length - 1];
     // 3. Check if player has enough money
-    if (activePlayer.money < Game.spyCost) {
-      return `Not enough money to spy. You need $${Game.spyCost}.`;
+    const spyCost = target.fortified ? Game.spyFortifiedCost : Game.spyCost;
+    if (activePlayer.money < spyCost) {
+      return `Not enough money to spy. You need $${spyCost}.`;
     }
     // 4. Check if country is already in knowledge and was spied on this turn
     const knowledge = activePlayer.knowledge.find(k => k.country === target);
@@ -37,7 +38,7 @@ export class ActionSpy extends Action {
       return 'You already have recent information about this country.';
     }
     // 5. Deduct spycost and update knowledge
-    activePlayer.money -= Game.spyCost;
+    activePlayer.money -= spyCost;
     const newKnowledge = {
       country: target,
       gameTurn: gameTurn,

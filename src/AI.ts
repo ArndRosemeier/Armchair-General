@@ -7,6 +7,7 @@ import { ActionAttack } from './ActionAttack';
 import { ActionSpy } from './ActionSpy';
 import { ActionMove } from './ActionMove';
 import { ActionFortify } from './ActionFortify';
+import { ActionBuyArmies } from './ActionBuyArmies';
 
 /**
  * AI class for handling computer-controlled player logic.
@@ -70,7 +71,7 @@ export class AI {
     const allCountries = worldMap.getCountries();
     const opportunities: Opportunity[] = [];
     for (const country of allCountries) {
-      if (!country.owner || country.owner === this.player) continue; // Only consider enemy countries
+      if (country.owner === this.player) continue; // Only consider enemy countries
       // Find the best owned country to attack this target
       const [attacker, score] = this.countryBestAttackerScore(country);
       if (!attacker) continue;
@@ -96,7 +97,10 @@ export class AI {
       action: opportunity.action.constructor.name,
       score: opportunity.score
     });
-    opportunity.action.Act(opportunity.countries, this.player, this.game, opportunity.amount);
+    const result = opportunity.action.Act(opportunity.countries, this.player, this.game, opportunity.amount);
+    if (result) {
+      console.log('Action result:', result);
+    }
     this.player.useAction();
     return true;
   }
@@ -234,6 +238,50 @@ export class AI {
   }
 
   /**
+   * Finds buy armies opportunities, prioritizing reinforcing the weakest country to average, then reinforcing near juicy targets.
+   */
+  FindBuyOpportunities(): Opportunity[] {
+    const opportunities: Opportunity[] = [];
+    const action = new ActionBuyArmies();
+    const money = this.player.money;
+    const armyCost = Game.armyCost;
+    if (this.player.ownedCountries.length === 0 || money < armyCost) return opportunities;
+    const avgArmy = Math.floor(this.player.totalArmies() / this.player.ownedCountries.length);
+    // 1. Bring weakest country up to average if possible
+    const weakest = this.player.ownedCountries.reduce((min, c) => c.armies < min.armies ? c : min, this.player.ownedCountries[0]);
+    if (weakest.armies < avgArmy) {
+      const needed = avgArmy - weakest.armies;
+      const affordable = Math.floor(money / armyCost);
+      const amount = Math.min(needed, affordable, 100000); // cap to 100k for sanity
+      if (amount > 0) {
+        const score = avgArmy - weakest.armies / 1000;
+        opportunities.push(new Opportunity([weakest], amount, action, score));
+      }
+    }
+    // 2. Reinforce the country with the juiciest neighbor
+    let bestTarget: Country | null = null;
+    let bestScore = -Infinity;
+    for (const owned of this.player.ownedCountries) {
+      for (const neighbor of owned.neighbors) {
+        if (neighbor.owner !== this.player) {
+          const score = this.countryScore(neighbor);
+          if (score > bestScore) {
+            bestScore = score;
+            bestTarget = owned;
+          }
+        }
+      }
+    }
+    if (bestTarget) {
+      const affordable = Math.floor(money / armyCost);
+      if (affordable > 0) {
+        opportunities.push(new Opportunity([bestTarget], affordable, action, bestScore * 10));
+      }
+    }
+    return opportunities;
+  }
+
+  /**
    * Finds the best opportunity among all possible actions.
    * Logs all opportunities to the console and returns the one with the highest score.
    */
@@ -250,6 +298,7 @@ export class AI {
     allOpportunities.push(...this.FindAttackOpportunities());
     allOpportunities.push(...this.FindMoveOpportunities(moveAction));
     allOpportunities.push(...this.FindFortifyOpportunities(fortifyAction));
+    allOpportunities.push(...this.FindBuyOpportunities());
 
     // Log all opportunities
     for (const opp of allOpportunities) {
