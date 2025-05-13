@@ -55,7 +55,10 @@ export class AI {
       }
       const score = 500 - distance;
       if (score > 0) {
-        opportunities.push(new Opportunity([country], 0, action, score));
+        const spyCost = country.fortified ? Game.spyFortifiedCost : Game.spyCost;
+        if (this.player.money >= spyCost) {
+          opportunities.push(new Opportunity([country], 0, action, score));
+        }
       }
     }
     return opportunities;
@@ -230,8 +233,10 @@ export class AI {
     const opportunities: Opportunity[] = [];
     for (const country of this.player.ownedCountries) {
       if (!country.fortified) {
-        const score = country.income / 1000;
-        opportunities.push(new Opportunity([country], 0, action, score));
+        if (this.player.money >= Game.fortifyCost) {
+          const score = country.income / 1000;
+          opportunities.push(new Opportunity([country], 0, action, score));
+        }
       }
     }
     return opportunities;
@@ -245,13 +250,15 @@ export class AI {
     const action = new ActionBuyArmies();
     const money = this.player.money;
     const armyCost = Game.armyCost;
-    if (this.player.ownedCountries.length === 0 || money < armyCost) return opportunities;
+    const reserve = 2000000;
+    const availableMoney = Math.max(0, money - reserve);
+    if (this.player.ownedCountries.length === 0 || availableMoney < armyCost) return opportunities;
     const avgArmy = Math.floor(this.player.totalArmies() / this.player.ownedCountries.length);
     // 1. Bring weakest country up to average if possible
     const weakest = this.player.ownedCountries.reduce((min, c) => c.armies < min.armies ? c : min, this.player.ownedCountries[0]);
     if (weakest.armies < avgArmy) {
       const needed = avgArmy - weakest.armies;
-      const affordable = Math.floor(money / armyCost);
+      const affordable = Math.floor(availableMoney / armyCost);
       const amount = Math.min(needed, affordable, 100000); // cap to 100k for sanity
       if (amount > 0) {
         const score = avgArmy - weakest.armies / 1000;
@@ -273,7 +280,7 @@ export class AI {
       }
     }
     if (bestTarget) {
-      const affordable = Math.floor(money / armyCost);
+      const affordable = Math.floor(availableMoney / armyCost);
       if (affordable > 0) {
         opportunities.push(new Opportunity([bestTarget], affordable, action, bestScore * 10));
       }

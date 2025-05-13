@@ -281,6 +281,7 @@ export class GameGui {
     let acted = true;
     while (acted) {
       acted = ai.takeAction();
+      this.markMapDirty();
       this.renderMainGui(this.rootContainer as HTMLElement, this.currentGame);
     }
   }
