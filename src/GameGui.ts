@@ -12,6 +12,7 @@ export class GameGui {
   private state: string;
   private currentGame: any = null;
   private rootContainer: HTMLElement | null = null;
+  private canceled: boolean = false;
 
   // List of all clicked country names
   private clickedCountryNames: string[] = [];
@@ -91,7 +92,12 @@ export class GameGui {
     Array.from(actionsDiv.children).forEach(child => {
       if (!(child instanceof HTMLElement)) return;
       if (child.classList.contains('persistent-action-btn')) {
+        // Always keep persistent buttons (like New Game)
         persistentButtons.push(child);
+        // Always enable New Game button
+        if (child.textContent && child.textContent.trim() === 'New Game') {
+          (child as HTMLButtonElement).disabled = false;
+        }
       } else {
         actionsDiv.removeChild(child);
       }
@@ -273,30 +279,35 @@ export class GameGui {
    * Called whenever a new turn starts (after startTurn is called on the active player).
    */
   turnStarted() {
-    // If the active player is human, do nothing
+    if (this.canceled) return;
     if (!this.currentGame?.activePlayer?.isAI) return;
-    // If the active player is AI, let it act until out of actions
     const ai = this.currentGame.activePlayer.AI;
     if (!ai) return;
-    let acted = true;
-    while (acted) {
-      acted = ai.takeAction();
+
+    const doOneAction = () => {
+      if (this.canceled) return;
+      const acted = ai.takeAction();
       this.markMapDirty();
       this.renderMainGui(this.rootContainer as HTMLElement, this.currentGame);
-    }
-    // After AI is done, end the turn just like the end turn button, but do not recurse
-    if (this.currentGame) {
-      this.currentGame.nextTurn();
-      this.renderMainGui(this.rootContainer as HTMLElement, this.currentGame);
-      // Only call turnStarted again if the next player is also AI
-      if (this.currentGame.activePlayer.isAI) {
-        setTimeout(() => this.turnStarted(), 0);
+
+      if (acted) {
+        setTimeout(doOneAction, 400); // Schedule next action
+      } else {
+        // End turn and move to next player
+        this.currentGame.nextTurn();
+        this.renderMainGui(this.rootContainer as HTMLElement, this.currentGame);
+        if (this.currentGame.activePlayer.isAI) {
+          setTimeout(() => this.turnStarted(), 400);
+        }
       }
-    }
+    };
+
+    doOneAction();
   }
 
   async startNewGame() {
     // Always use the root container for the dialog
+    this.canceled = true;
     const container = this.rootContainer!;
     const { showNewGameDialog } = await import('./NewGameDialog');
     try {
@@ -322,6 +333,7 @@ export class GameGui {
       this.renderMainGui(container, this.currentGame);
       // Start the first player's turn
       if (this.currentGame && this.currentGame.players.length > 0) {
+        this.canceled = false;
         this.currentGame.activePlayer.startTurn();
         this.turnStarted();
       }

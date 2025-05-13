@@ -231,10 +231,12 @@ export class AI {
    */
   FindFortifyOpportunities(action: Action): Opportunity[] {
     const opportunities: Opportunity[] = [];
+    const unfortifiedCount = this.player.ownedCountries.filter(c => !c.fortified).length;
     for (const country of this.player.ownedCountries) {
       if (!country.fortified) {
         if (this.player.money >= Game.fortifyCost) {
-          const score = country.income / 1000;
+          let score = country.income / 1000;
+          score *= unfortifiedCount;
           opportunities.push(new Opportunity([country], 0, action, score));
         }
       }
