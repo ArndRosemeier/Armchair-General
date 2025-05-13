@@ -7,6 +7,7 @@ export type PlayerConfig = { name: string; isAI: boolean };
 export interface NewGameDialogResult {
   map: WorldMap;
   players: PlayerConfig[];
+  showArmies: boolean;
 }
 
 /**
@@ -140,7 +141,7 @@ export function showNewGameDialog(container: HTMLElement): Promise<NewGameDialog
           return country;
         });
         // Step 2: Build a lookup map by name
-        const countryMap = new Map(reconstructedCountries.map(c => [c.name, c]));
+        const countryMap = new Map(reconstructedCountries.map((c: Country) => [c.name, c]));
         // Log country order after transfer
         //WorldMap.logCountryNamesInOrder(reconstructedCountries, 'after transfer');
         // Step 3: Assign neighbors by reference
@@ -162,7 +163,7 @@ export function showNewGameDialog(container: HTMLElement): Promise<NewGameDialog
         if (!currentMap) {
           throw new Error('WorldMap is null when rendering map preview.');
         }
-        mapCanvas = Renderer.render(currentMap);
+        mapCanvas = Renderer.render(currentMap, [], [], true);
         // Only set style for preview scaling, do not touch attribute width/height
         mapCanvas.style.width = '300px';
         mapCanvas.style.height = '200px';
@@ -287,6 +288,11 @@ export function showNewGameDialog(container: HTMLElement): Promise<NewGameDialog
             const newName = input.value.trim() || p.name;
             p.name = newName;
             updatePlayerList();
+            resolve({
+              map: currentMap!,
+              players: players,
+              showArmies: showArmiesCheckbox.checked
+            });
           }
           input.addEventListener('blur', save);
           input.addEventListener('keydown', e => {
@@ -417,7 +423,7 @@ export function showNewGameDialog(container: HTMLElement): Promise<NewGameDialog
     startBtn.onclick = () => {
       if (!currentMap || players.length < 2) return;
       document.body.removeChild(overlay);
-      resolve({ map: currentMap, players });
+      resolve({ map: currentMap, players, showArmies: showArmiesCheckbox.checked });
     };
 
     // Cancel button
@@ -455,6 +461,22 @@ export function showNewGameDialog(container: HTMLElement): Promise<NewGameDialog
         reject();
       }
     });
+
+    // Add Show Armies checkbox
+    const showArmiesDiv = document.createElement('div');
+    showArmiesDiv.style.margin = '12px 0 0 0';
+    showArmiesDiv.style.display = 'flex';
+    showArmiesDiv.style.alignItems = 'center';
+    const showArmiesCheckbox = document.createElement('input');
+    showArmiesCheckbox.type = 'checkbox';
+    showArmiesCheckbox.id = 'show-armies-checkbox';
+    showArmiesCheckbox.style.marginRight = '8px';
+    const showArmiesLabel = document.createElement('label');
+    showArmiesLabel.htmlFor = 'show-armies-checkbox';
+    showArmiesLabel.textContent = 'Show Armies';
+    showArmiesDiv.appendChild(showArmiesCheckbox);
+    showArmiesDiv.appendChild(showArmiesLabel);
+    rightCol.appendChild(showArmiesDiv);
 
     // Add to DOM
     overlay.appendChild(dialog);

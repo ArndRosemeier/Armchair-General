@@ -14,8 +14,9 @@ export class Renderer {
    * @param worldMap The WorldMap to render
    * @param highlightedCountries Optional array of countries to highlight
    * @param highlightCountries Optional array of countries whose names should be rendered in light green
+   * @param showArmies If true, display army count under each country name
    */
-  static render(worldMap: WorldMap, highlightedCountries: any[] = [], highlightCountries: Country[] = []): HTMLCanvasElement {
+  static render(worldMap: WorldMap, highlightedCountries: any[] = [], highlightCountries: Country[] = [], showArmies: boolean = false): HTMLCanvasElement {
     const map = worldMap.getMap();
     const countries = worldMap.getCountries?.() || [];
     // Log all home country names
@@ -116,6 +117,18 @@ export class Renderer {
       // Draw text with appropriate color - light green for highlighted countries, white for others
       ctx.fillStyle = shouldHighlight ? '#90EE90' : 'white';  // Light green for highlighted countries
       ctx.fillText(displayName, cx, cy);
+      if (showArmies) {
+        // Draw armies below the name, formatted as 100k, 45k, etc.
+        const armies = country.armies || 0;
+        const armiesText = `${Math.round(armies / 1000)}k`;
+        ctx.font = 'bold 9px Verdana, Geneva, sans-serif';
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = 'black';
+        ctx.strokeText(armiesText, cx, cy + 13);
+        ctx.fillStyle = '#FFD700'; // gold/yellow for armies
+        ctx.fillText(armiesText, cx, cy + 13);
+        ctx.font = 'bold 10px Verdana, Geneva, sans-serif'; // restore font
+      }
     }
     ctx.restore();
     return canvas;

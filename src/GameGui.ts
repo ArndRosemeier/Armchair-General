@@ -7,6 +7,7 @@ import { ActionAttack } from './ActionAttack';
 import { ActionCalculateAttack } from './ActionCalculateAttack';
 import { ActionMove } from './ActionMove';
 import { ActionBuyArmies } from './ActionBuyArmies';
+import { Game } from './Game';
 
 export class GameGui {
   private state: string;
@@ -251,7 +252,7 @@ export class GameGui {
         const known = this.currentGame.activePlayer.getKnownCountries();
         highlightCountries = known.owned.concat(known.known);
       }
-      this.worldMapCanvas = Renderer.render(this.currentGame.worldMap, [], highlightCountries);
+      this.worldMapCanvas = Renderer.render(this.currentGame.worldMap, [], highlightCountries, Game.showArmies);
       this.mapDirty = false;
     }
     return this.worldMapCanvas;
@@ -315,6 +316,8 @@ export class GameGui {
       // Dynamically import Player and Game modules
       const PlayerMod = await import('./Player');
       const GameMod = await import('./Game');
+      // Set showArmies global
+      GameMod.Game.showArmies = result.showArmies;
       // Use Player.COLORS or fallback
       const defaultColors = ['#4fc3f7','#81c784','#ffb74d','#e57373','#ba68c8','#ffd54f','#64b5f6','#a1887f'];
       const colorArr = PlayerMod.Player.COLORS ?? defaultColors;
