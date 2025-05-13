@@ -240,7 +240,12 @@ export class GameGui {
   getWorldMapCanvas(): HTMLCanvasElement | null {
     if (!this.currentGame || !this.currentGame.worldMap) return null;
     if (this.mapDirty || !this.worldMapCanvas) {
-      this.worldMapCanvas = Renderer.render(this.currentGame.worldMap);
+      let highlightCountries = [];
+      if (this.currentGame.activePlayer) {
+        const known = this.currentGame.activePlayer.getKnownCountries();
+        highlightCountries = known.owned.concat(known.known);
+      }
+      this.worldMapCanvas = Renderer.render(this.currentGame.worldMap, [], highlightCountries);
       this.mapDirty = false;
     }
     return this.worldMapCanvas;

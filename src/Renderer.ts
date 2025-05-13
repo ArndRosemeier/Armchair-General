@@ -1,4 +1,5 @@
 import { WorldMap, OCEAN, LAND } from './WorldMap';
+import { Country } from './Country';
 
 export class Renderer {
   // Generate a visually distinct color for each country using HSL
@@ -12,8 +13,9 @@ export class Renderer {
    * Renders the world map. Optionally highlights given countries with a yellow overlay.
    * @param worldMap The WorldMap to render
    * @param highlightedCountries Optional array of countries to highlight
+   * @param highlightCountries Optional array of countries whose names should be rendered in light green
    */
-  static render(worldMap: WorldMap, highlightedCountries: any[] = []): HTMLCanvasElement {
+  static render(worldMap: WorldMap, highlightedCountries: any[] = [], highlightCountries: Country[] = []): HTMLCanvasElement {
     const map = worldMap.getMap();
     const countries = worldMap.getCountries?.() || [];
     // Log all home country names
@@ -107,8 +109,12 @@ export class Renderer {
       ctx.lineWidth = 3;
       ctx.strokeStyle = 'black';
       ctx.strokeText(displayName, cx, cy);
-      // Draw white text
-      ctx.fillStyle = 'white';
+      
+      // Check if this country should have its name highlighted
+      const shouldHighlight = highlightCountries.some(c => c === country);
+      
+      // Draw text with appropriate color - light green for highlighted countries, white for others
+      ctx.fillStyle = shouldHighlight ? '#90EE90' : 'white';  // Light green for highlighted countries
       ctx.fillText(displayName, cx, cy);
     }
     ctx.restore();
@@ -121,17 +127,19 @@ export class Renderer {
    * @param container The HTML element to append the interactive canvas to
    * @param initialWidth Optional: display canvas width (default: 512)
    * @param initialHeight Optional: display canvas height (default: 512)
+   * @param highlightCountries Optional array of countries whose names should be rendered in light green
    * @returns The interactive canvas element
    */
   static displayWithPanZoom(
     worldMap: WorldMap,
     container: HTMLElement,
     initialWidth: number = 512,
-    initialHeight: number = 512
+    initialHeight: number = 512,
+    highlightCountries: Country[] = []
   ): HTMLCanvasElement {
     // Render to offscreen canvas (1 pixel per cell)
     let highlightedCountry: any = null;
-    let offscreen = Renderer.render(worldMap);
+    let offscreen = Renderer.render(worldMap, [], highlightCountries);
     const mapWidth = offscreen.width;
     const mapHeight = offscreen.height;
 
@@ -154,7 +162,7 @@ export class Renderer {
 
     function draw() {
       // Re-render offscreen with highlight if needed
-      offscreen = Renderer.render(worldMap, highlightedCountry ? [highlightedCountry] : []);
+      offscreen = Renderer.render(worldMap, highlightedCountry ? [highlightedCountry] : [], highlightCountries);
       ctx!.setTransform(1, 0, 0, 1, 0, 0); // reset
       ctx!.clearRect(0, 0, canvas.width, canvas.height);
       ctx!.setTransform(scale, 0, 0, scale, offsetX, offsetY);

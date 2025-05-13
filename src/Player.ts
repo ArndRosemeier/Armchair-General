@@ -96,6 +96,26 @@ export class Player {
   }
 
   /**
+   * Returns both the owned countries and known countries (from spying)
+   * in a combined object.
+   */
+  getKnownCountries(): { owned: Country[]; known: Country[] } {
+    const knownCountriesSet = new Set<Country>();
+    
+    // Add countries from knowledge (spied upon)
+    this.knowledge.forEach(item => knownCountriesSet.add(item.country));
+    
+    // Filter out owned countries from the known set to avoid duplicates
+    const knownCountries = Array.from(knownCountriesSet)
+      .filter(country => !this.ownedCountries.includes(country));
+    
+    return {
+      owned: [...this.ownedCountries],
+      known: knownCountries
+    };
+  }
+
+  /**
    * Returns an info object for the given country, including:
    * - name: from country
    * - owner: from country
