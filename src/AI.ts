@@ -58,7 +58,8 @@ export class AI {
       if (score > 0) {
         const spyCost = country.fortified ? Game.spyFortifiedCost : Game.spyCost;
         if (this.player.money >= spyCost) {
-          opportunities.push(new Opportunity([country], 0, action, score));
+          const adjustedScore = score * (this.player.totalIncome() / 5000000);
+          opportunities.push(new Opportunity([country], 0, action, adjustedScore));
         }
       }
     }
@@ -93,19 +94,24 @@ export class AI {
    */
   takeAction(): boolean {
     if (this.player.actionsLeft <= 0) return false;
-    // With a chance of 0.15, do PlanSurpriseAttack if actionsLeft is 4 or more
-    if (this.player.actionsLeft >= 4 && Math.random() < 0.15) {
+    // With a chance of 0.2, do PlanSurpriseAttack if actionsLeft is 4 or more
+    if (this.player.actionsLeft >= 4 && Math.random() < 0.2) {
       this.PlanSurpriseAttack();
       return true;
     }
     let opportunity: Opportunity | null = null;
+    let fromActionPlan = false;
     if (this.actionPlan.length > 0) {
       opportunity = this.actionPlan.shift()!;
+      fromActionPlan = true;
     } else {
       opportunity = this.findBestOpportunity();
     }
     if (!opportunity) return false;
     const result = opportunity.action.Act(opportunity.countries, this.player, this.game, opportunity.amount);
+    if (fromActionPlan && result) {
+      console.log('Action result (from actionPlan):', result);
+    }
     this.player.useAction();
     return true;
   }
