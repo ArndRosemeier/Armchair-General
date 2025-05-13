@@ -53,7 +53,7 @@ export class AI {
         // Dismiss if opponent owned and knowledge is not stale
         if (knowledge && (this.game.gameTurn - knowledge.gameTurn) <= 3) continue;
       }
-      const score = 500 - distance;
+      const score = 2000 - Math.sqrt(distance);
       if (score > 0) {
         const spyCost = country.fortified ? Game.spyFortifiedCost : Game.spyCost;
         if (this.player.money >= spyCost) {
@@ -171,8 +171,8 @@ export class AI {
         this.game
       );
       let score = 0;
-      if (attackChance >= 0.5) {
-        score = attackChance * this.countryScore(country);
+      if (attackChance >= 0.7) {
+        score = attackChance * attackChance * attackChance  * this.countryScore(country) * 100;
       }
       if (score > bestScore) {
         bestScore = score;
@@ -210,7 +210,7 @@ export class AI {
       // Move opportunity: move armies from strongest to the owned land with the juiciest neighbor
       const amount = Math.floor(strongest.armies * 0.5 / 1000) * 1000; // Move half armies, rounded
       if (amount > 0 && strongest !== bestTarget) {
-        opportunities.push(new Opportunity([strongest, bestTarget], amount, action, bestScore * 100));
+        opportunities.push(new Opportunity([strongest, bestTarget], amount, action, bestScore));
       }
     }
     // 2. Find the weakest owned country and check if it needs reinforcement
@@ -246,6 +246,9 @@ export class AI {
    * Finds buy armies opportunities, prioritizing reinforcing the weakest country to average, then reinforcing near juicy targets.
    */
   FindBuyOpportunities(): Opportunity[] {
+    const MoneyReserve = 2000000;
+    if (this.player.money <= MoneyReserve) return [];  
+
     const opportunities: Opportunity[] = [];
     const action = new ActionBuyArmies();
     const money = this.player.money;
@@ -259,10 +262,11 @@ export class AI {
     if (weakest.armies < avgArmy) {
       const needed = avgArmy - weakest.armies;
       const affordable = Math.floor(availableMoney / armyCost);
-      const amount = Math.min(needed, affordable, 100000); // cap to 100k for sanity
-      if (amount > 0) {
-        const score = avgArmy - weakest.armies / 1000;
-        opportunities.push(new Opportunity([weakest], amount, action, score));
+      const amount = Math.min(needed, affordable, 100000);
+      const roundedAmount = Math.floor(amount / 1000) * 1000;
+      if (roundedAmount > 0) {
+        const score = (avgArmy - weakest.armies) / 1000;
+        opportunities.push(new Opportunity([weakest], roundedAmount, action, score));
       }
     }
     // 2. Reinforce the country with the juiciest neighbor
@@ -279,10 +283,12 @@ export class AI {
         }
       }
     }
+    if (!bestTarget) bestTarget = this.player.homeCountry;
     if (bestTarget) {
-      const affordable = Math.floor(availableMoney / armyCost);
-      if (affordable > 0) {
-        opportunities.push(new Opportunity([bestTarget], affordable, action, bestScore * 10));
+      const affordable = Math.floor((availableMoney - MoneyReserve) / armyCost);
+      const roundedAffordable = Math.floor(affordable / 1000) * 1000;
+      if (roundedAffordable > 0) {
+        opportunities.push(new Opportunity([bestTarget], roundedAffordable, action, bestScore * 1000));
       }
     }
     return opportunities;
