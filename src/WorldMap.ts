@@ -158,6 +158,7 @@ export class WorldMap {
     } else {
       worldMap.assignRandomCountryNames();
     }
+    worldMap.regenerateMapFromCountries(worldMap.countries);
     worldMap.createContinents();
     return worldMap;
   }
@@ -227,4 +228,39 @@ export class WorldMap {
   getMap(): number[][] {
     return this.map;
   }
+
+  /**
+   * Regenerates the internal map array from the given countries array.
+   * - Initializes an ocean map of the same size as the current map.
+   * - For each country, marks all its coordinate pixels with its index in the array.
+   * Throws if country coordinates are out of bounds.
+   */
+  regenerateMapFromCountries(countries: Country[]): void {
+    if (!this.map || !Array.isArray(this.map) || this.map.length === 0 || this.map[0].length === 0) {
+      throw new Error("WorldMap.map is not initialized or has invalid dimensions");
+    }
+    const height = this.map.length;
+    const width = this.map[0].length;
+    // Create new ocean map
+    const newMap = WorldMap.createOceanMap(width, height);
+    // For each country, mark its coordinates
+    for (let idx = 0; idx < countries.length; ++idx) {
+      const country = countries[idx];
+      if (!country.coordinates || !Array.isArray(country.coordinates)) {
+        throw new Error(`Country at index ${idx} has no valid coordinates array`);
+      }
+      for (const [x, y] of country.coordinates) {
+        if (
+          typeof x !== "number" || typeof y !== "number" ||
+          x < 0 || x >= width ||
+          y < 0 || y >= height
+        ) {
+          throw new Error(`Country index ${idx} has out-of-bounds coordinate (${x}, ${y})`);
+        }
+        newMap[y][x] = idx;
+      }
+    }
+    this.map = newMap;
+  }
 }
+
