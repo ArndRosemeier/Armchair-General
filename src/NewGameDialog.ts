@@ -142,7 +142,7 @@ export function showNewGameDialog(container: HTMLElement): Promise<NewGameDialog
         // Step 2: Build a lookup map by name
         const countryMap = new Map(reconstructedCountries.map(c => [c.name, c]));
         // Log country order after transfer
-        WorldMap.logCountryNamesInOrder(reconstructedCountries, 'after transfer');
+        //WorldMap.logCountryNamesInOrder(reconstructedCountries, 'after transfer');
         // Step 3: Assign neighbors by reference
         countries.forEach((c: any, i: number) => {
           reconstructedCountries[i].neighbors = (c.neighbors || [])

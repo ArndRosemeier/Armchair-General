@@ -180,14 +180,11 @@ export class Renderer {
       const countries = worldMap.getCountries();
       const x = Math.floor(mouseX);
       const y = Math.floor(mouseY);
-      console.log('[Renderer] Mouse click:', { clientX: e.clientX, clientY: e.clientY, mouseX, mouseY, x, y });
       let clickedCountry = null;
       if (x >= 0 && y >= 0 && y < map.length && x < map[0].length) {
         const value = map[y][x];
-        console.log('[Renderer] Map value at click:', value);
         if (value >= 0 && countries[value]) {
           clickedCountry = countries[value];
-          console.log('[Renderer] Clicked country:', clickedCountry.name);
         }
       }
       if (clickedCountry) {
@@ -195,9 +192,7 @@ export class Renderer {
         draw();
         // Do not start panning if a country was clicked
         return;
-      } else {
-        console.log('[Renderer] No country found at click.');
-      }
+      } 
       // Otherwise, start panning
       isPanning = true;
       lastX = e.clientX;

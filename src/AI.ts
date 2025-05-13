@@ -35,22 +35,26 @@ export class AI {
   }
 
   /**
-   * Finds spy opportunities by selecting 10 random countries and evaluating them.
-   * Returns an array of Opportunity objects for valid targets.
+   * Finds spy opportunities using distance to closest owned country.
+   * Only considers countries that are not already known (if unowned) or are stale (if opponent owned).
+   * Score is 500 - distance (if > 0).
    */
   FindSpyOpportunities(): Opportunity[] {
     const action = new ActionSpy();
-    const worldMap = this.game.worldMap;
-    const allCountries = worldMap.getCountries();
     const opportunities: Opportunity[] = [];
-    for (const country of allCountries) {
+    const nonOwned = this.getNonOwnedCountriesSortedByDistance();
+    for (const { country, distance } of nonOwned) {
       const knowledge = this.player.knowledge.find(k => k.country === country);
-      const isOwnedByOther = country.owner && country.owner !== this.player;
-      const isUnknown = !knowledge;
-      const isStale = isOwnedByOther && knowledge && (this.game.gameTurn - knowledge.gameTurn) > 3;
-      if (isUnknown || isStale) {
-        const [, score] = this.countryBestAttackerScore(country);
-        opportunities.push(new Opportunity([country], 0, action, score * 1.1));
+      if (!country.owner) {
+        // Dismiss if unowned and already in knowledge
+        if (knowledge) continue;
+      } else {
+        // Dismiss if opponent owned and knowledge is not stale
+        if (knowledge && (this.game.gameTurn - knowledge.gameTurn) <= 3) continue;
+      }
+      const score = 500 - distance;
+      if (score > 0) {
+        opportunities.push(new Opportunity([country], 0, action, score));
       }
     }
     return opportunities;
@@ -86,6 +90,12 @@ export class AI {
     if (this.player.actionsLeft <= 0) return false;
     const opportunity = this.findBestOpportunity();
     if (!opportunity) return false;
+    console.log('Executing opportunity:', {
+      countries: opportunity.countries.map(c => c.name),
+      amount: opportunity.amount,
+      action: opportunity.action.constructor.name,
+      score: opportunity.score
+    });
     opportunity.action.Act(opportunity.countries, this.player, this.game, opportunity.amount);
     this.player.useAction();
     return true;
@@ -254,5 +264,28 @@ export class AI {
     // Return the best opportunity
     if (allOpportunities.length === 0) return null;
     return allOpportunities.reduce((best, curr) => curr.score > best.score ? curr : best, allOpportunities[0]);
+  }
+
+  /**
+   * Returns all non-owned countries sorted by distance to the closest owned country.
+   * If a country is not reachable, uses 10000 as the distance.
+   */
+  getNonOwnedCountriesSortedByDistance(): { country: Country, distance: number }[] {
+    const worldMap = this.game.worldMap;
+    const allCountries = worldMap.getCountries();
+    const nonOwned: { country: Country, distance: number }[] = [];
+    for (const country of allCountries) {
+      if (country.owner === this.player) continue;
+      let minDist = 10000;
+      for (const owned of this.player.ownedCountries) {
+        const dist = worldMap.distance(owned, country);
+        if (dist !== null) {
+          minDist = Math.min(minDist, dist);
+        }
+      }
+      nonOwned.push({ country, distance: minDist });
+    }
+    nonOwned.sort((a, b) => a.distance - b.distance);
+    return nonOwned;
   }
 }

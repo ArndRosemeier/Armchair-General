@@ -18,7 +18,7 @@ ctx.onmessage = async (event: MessageEvent) => {
     // Generate the map (runs in worker thread)
     const worldMap = WorldMap.createMap(data.width, data.height, data.countryCount);
     // Log country order in worker before transfer
-    WorldMap.logCountryNamesInOrder(worldMap.getCountries(), 'in worker');
+    //WorldMap.logCountryNamesInOrder(worldMap.getCountries(), 'in worker');
     // Serialize the map (WorldMap is not structured cloneable)
     const map = worldMap.getMap();
     const countries = worldMap.getCountries();
