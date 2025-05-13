@@ -5,6 +5,8 @@ import { Opportunity } from './Opportunity';
 import { Action } from './Action';
 import { ActionAttack } from './ActionAttack';
 import { ActionSpy } from './ActionSpy';
+import { ActionMove } from './ActionMove';
+import { ActionFortify } from './ActionFortify';
 
 /**
  * AI class for handling computer-controlled player logic.
@@ -48,7 +50,7 @@ export class AI {
       const isStale = isOwnedByOther && knowledge && (this.game.gameTurn - knowledge.gameTurn) > 3;
       if (isUnknown || isStale) {
         const [, score] = this.countryBestAttackerScore(country);
-        opportunities.push(new Opportunity([country], 0, action, score * 0.5));
+        opportunities.push(new Opportunity([country], 0, action, score * 1.1));
       }
     }
     return opportunities;
@@ -77,11 +79,16 @@ export class AI {
   }
 
   /**
-   * Main method for AI to take its turn. Override or implement logic here.
+   * Main method for AI to take its turn. Finds and executes the best opportunity if actions remain.
+   * Returns true if an action was taken, false otherwise.
    */
-  takeTurn(): void {
-    // TODO: Implement AI turn logic
-    // Example: choose action, select countries, execute moves
+  takeTurn(): boolean {
+    if (this.player.actionsLeft <= 0) return false;
+    const opportunity = this.findBestOpportunity();
+    if (!opportunity) return false;
+    opportunity.action.Act(opportunity.countries, this.player, this.game, opportunity.amount);
+    this.player.useAction();
+    return true;
   }
 
   /**
@@ -214,5 +221,38 @@ export class AI {
       }
     }
     return opportunities;
+  }
+
+  /**
+   * Finds the best opportunity among all possible actions.
+   * Logs all opportunities to the console and returns the one with the highest score.
+   */
+  findBestOpportunity(): Opportunity | null {
+    // Prepare actions
+    const spyAction = new ActionSpy();
+    const attackAction = new ActionAttack();
+    const moveAction = new ActionMove();
+    const fortifyAction = new ActionFortify();
+
+    // Gather all opportunities
+    const allOpportunities: Opportunity[] = [];
+    allOpportunities.push(...this.FindSpyOpportunities());
+    allOpportunities.push(...this.FindAttackOpportunities());
+    allOpportunities.push(...this.FindMoveOpportunities(moveAction));
+    allOpportunities.push(...this.FindFortifyOpportunities(fortifyAction));
+
+    // Log all opportunities
+    for (const opp of allOpportunities) {
+      console.log('Opportunity:', {
+        countries: opp.countries.map(c => c.name),
+        amount: opp.amount,
+        action: opp.action.constructor.name,
+        score: opp.score
+      });
+    }
+
+    // Return the best opportunity
+    if (allOpportunities.length === 0) return null;
+    return allOpportunities.reduce((best, curr) => curr.score > best.score ? curr : best, allOpportunities[0]);
   }
 }
