@@ -147,9 +147,9 @@ export class GameGui {
             const [min, max] = amountRange;
             const selected = await showAmountDialog(min, max, min);
             if (selected === null) return; // Cancelled
-            result = action.Act(clickedCountries, this.currentGame.activePlayer, this.currentGame, selected);
+            result = await action.Act(clickedCountries, this.currentGame.activePlayer, this.currentGame, selected);
           } else {
-            result = action.Act(clickedCountries, this.currentGame.activePlayer, this.currentGame);
+            result = await action.Act(clickedCountries, this.currentGame.activePlayer, this.currentGame);
           }
           // Decrement action count
           this.currentGame.activePlayer.useAction();
@@ -244,8 +244,8 @@ export class GameGui {
    * Get the cached or newly rendered world map canvas.
    * If dirty, re-render using Renderer and cache.
    */
-  getWorldMapCanvas(): HTMLCanvasElement | null {
-    if (!this.currentGame || !this.currentGame.worldMap) return null;
+  getWorldMapCanvas(): HTMLCanvasElement {
+    if (!this.currentGame || !this.currentGame.worldMap) throw new Error('GameGui.getWorldMapCanvas: currentGame or worldMap is missing');
     if (this.mapDirty || !this.worldMapCanvas) {
       let highlightCountries = [];
       if (this.currentGame.activePlayer) {
@@ -279,20 +279,20 @@ export class GameGui {
   /**
    * Called whenever a new turn starts (after startTurn is called on the active player).
    */
-  turnStarted() {
+  async turnStarted() {
     if (this.canceled) return;
     if (!this.currentGame?.activePlayer?.isAI) return;
     const ai = this.currentGame.activePlayer.AI;
     if (!ai) return;
 
-    const doOneAction = () => {
+    const doOneAction = async () => {
       if (this.canceled) return;
-      const acted = ai.takeAction();
+      const acted = await ai.takeAction();
       this.markMapDirty();
       this.renderMainGui(this.rootContainer as HTMLElement, this.currentGame);
 
       if (acted) {
-        setTimeout(doOneAction, 400); // Schedule next action
+        setTimeout(() => doOneAction(), 400); // Schedule next action
       } else {
         // End turn and move to next player
         this.currentGame.nextTurn();
@@ -330,7 +330,7 @@ export class GameGui {
         0,
         p.isAI
       ));
-      this.currentGame = GameMod.Game.initNewGame(result.map, playerObjs);
+      this.currentGame = GameMod.Game.initNewGame(result.map, playerObjs, this);
       this.markMapDirty();
       this.getWorldMapCanvas(); // Render and cache the map after game start
       this.renderMainGui(container, this.currentGame);
@@ -408,6 +408,30 @@ export class GameGui {
       mapCanvas.style.height = '100%';
       mapCanvas.style.display = 'block';
       mapArea.appendChild(mapCanvas);
+      // --- Add overlay canvas for glow effect ---
+      let glowCanvas: HTMLCanvasElement | null = null;
+      let lastGlowCountry: any = null;
+      function ensureGlowCanvas() {
+        if (!glowCanvas) {
+          glowCanvas = document.createElement('canvas');
+          glowCanvas.width = mapCanvas!.width;
+          glowCanvas.height = mapCanvas!.height;
+          glowCanvas.style.position = 'absolute';
+          glowCanvas.style.left = '0';
+          glowCanvas.style.top = '0';
+          glowCanvas.style.pointerEvents = 'none';
+          glowCanvas.style.width = '100%';
+          glowCanvas.style.height = '100%';
+          mapArea.appendChild(glowCanvas);
+        }
+      }
+      function clearGlow() {
+        if (glowCanvas) {
+          const ctx = glowCanvas.getContext('2d');
+          if (ctx) ctx.clearRect(0, 0, glowCanvas.width, glowCanvas.height);
+        }
+        lastGlowCountry = null;
+      }
       // Add mouse click detection
       if (game && game.worldMap) {
         mapCanvas.addEventListener('mousedown', (e: MouseEvent) => {
@@ -428,6 +452,39 @@ export class GameGui {
                 console.warn(`[GameGui] Click at (${x},${y}) is not in coordinates of country: ${clickedCountry.name}`);
               }
               this.clickedCountryNames.push(clickedCountry.name);
+
+              // --- Draw glow effect ---
+              ensureGlowCanvas();
+              clearGlow();
+              if (glowCanvas && clickedCountry) {
+                const ctx = glowCanvas.getContext('2d');
+                if (ctx) {
+                  Renderer.drawCountryGlow(ctx, clickedCountry, [0,0,0], clickedCountry.color);
+                  lastGlowCountry = clickedCountry;
+                  // --- Draw country name and armies on top of glow ---
+                  const [cx, cy] = clickedCountry.center ? clickedCountry.center() : [0, 0];
+                  const displayName = clickedCountry.fortified ? '🛡️ ' + clickedCountry.name : clickedCountry.name;
+                  ctx.save();
+                  ctx.font = 'bold 10px Verdana, Geneva, sans-serif';
+                  ctx.textAlign = 'center';
+                  ctx.textBaseline = 'middle';
+                  ctx.lineWidth = 3;
+                  ctx.strokeStyle = 'black';
+                  ctx.strokeText(displayName, cx, cy);
+                  ctx.fillStyle = 'white';
+                  ctx.fillText(displayName, cx, cy);
+                  if (Game.showArmies && typeof clickedCountry.armies === 'number') {
+                    const armiesText = `${Math.round(clickedCountry.armies / 1000)}k`;
+                    ctx.font = 'bold 9px Verdana, Geneva, sans-serif';
+                    ctx.lineWidth = 2;
+                    ctx.strokeStyle = 'black';
+                    ctx.strokeText(armiesText, cx, cy + 13);
+                    ctx.fillStyle = '#FFD700';
+                    ctx.fillText(armiesText, cx, cy + 13);
+                  }
+                  ctx.restore();
+                }
+              }
 
               // Update action buttons
               this.updateActionButtons();
