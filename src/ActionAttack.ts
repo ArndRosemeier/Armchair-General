@@ -77,6 +77,7 @@ export class ActionAttack extends Action {
         survivors = Math.max(1000, Math.round(survivors / 1000) * 1000);
       }
       toCountry.armies = survivors;
+      toCountry.fortified = false;
       resultMsg = `Attack successful! ${survivors} of your ${amount} armies occupy ${toCountry.name}.`;
     } else {
       // Attack repelled

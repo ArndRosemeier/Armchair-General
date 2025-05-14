@@ -14,6 +14,7 @@ export class Game {
   static readonly initialPlayerMoney = 10000000;
   static readonly homeCountryIncome = 4000000;
   static readonly fortifyCost = 100000;
+  static showArmies: boolean = false;
   worldMap: WorldMap;
   players: Player[];
   gameTurn: number;

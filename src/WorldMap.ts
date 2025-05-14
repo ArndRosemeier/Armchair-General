@@ -219,7 +219,7 @@ export class WorldMap {
     const aHasOcean = a.oceanBorder && a.oceanBorder.length > 0;
     const bHasOcean = b.oceanBorder && b.oceanBorder.length > 0;
     if (aHasOcean && bHasOcean) {
-      return dist * 5;
+      return dist * 3;
     }
     // Otherwise unreachable
     return null;

@@ -471,9 +471,15 @@ export class GameGui {
       mapPlaceholder.style.display = 'flex';
       mapPlaceholder.style.alignItems = 'center';
       mapPlaceholder.style.justifyContent = 'center';
-      mapPlaceholder.style.color = '#bbb';
-      mapPlaceholder.style.fontSize = '2rem';
-      mapPlaceholder.textContent = 'World Map';
+      // Replace text with image
+      const img = document.createElement('img');
+      img.src = 'riskStartup.png';
+      img.alt = 'Risk Startup';
+      img.style.width = '100%';
+      img.style.height = '100%';
+      img.style.objectFit = 'cover';
+      img.style.borderRadius = '8px';
+      mapPlaceholder.appendChild(img);
       mapArea.appendChild(mapPlaceholder);
     }
 
