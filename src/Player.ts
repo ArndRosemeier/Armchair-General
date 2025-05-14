@@ -81,6 +81,7 @@ export class Player {
    * List of planned fortifications: [Country, int]
    */
   plannedFortifications: [Country, number][] = [];
+  aggressivity: number;
 
   constructor(
     name: string,
@@ -99,6 +100,7 @@ export class Player {
     this.money = money;
     this.isAI = isAI;
     this.actionsLeft = Player.ACTIONS_PER_TURN;
+    this.aggressivity = Math.floor(Math.random() * 8) + 2;
   }
 
   /**
