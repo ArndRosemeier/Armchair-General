@@ -173,4 +173,28 @@ export class Player {
     this.resetActions();
     // Add any other per-turn initialization logic here if needed
   }
+
+  /**
+   * Returns the share of total income this player has among all players (between 0 and 1).
+   */
+  get IncomeShare(): number {
+    if (!this.game || !this.game.players || this.game.players.length === 0) return 0;
+    const total = this.game.players.reduce((sum, p) => sum + (p.totalIncome?.() ?? 0), 0);
+    if (total === 0) return 0;
+    return this.totalIncome() / total;
+  }
+
+  /**
+   * Returns true if the player knows the army size of the given country.
+   * - If the player owns the country
+   * - If nobody owns the country and it is in the player's knowledge
+   * - If somebody else owns the country, it is in the knowledge and the knowledge is from the current game turn
+   */
+  armyKnown(country: Country): boolean {
+    if (country.owner === this) return true;
+    const knowledge = this.knowledge.find(k => k.country === country);
+    if (!country.owner && knowledge) return true;
+    if (country.owner && country.owner !== this && knowledge && this.game && knowledge.gameTurn === this.game.gameTurn) return true;
+    return false;
+  }
 }

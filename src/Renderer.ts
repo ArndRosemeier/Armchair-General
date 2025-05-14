@@ -15,8 +15,9 @@ export class Renderer {
    * @param highlightedCountries Optional array of countries to highlight
    * @param highlightCountries Optional array of countries whose names should be rendered in light green
    * @param showArmies If true, display army count under each country name
+   * @param currentPlayer The player whose knowledge is used for conditional army display
    */
-  static render(worldMap: WorldMap, highlightedCountries: any[] = [], highlightCountries: Country[] = [], showArmies: boolean = false): HTMLCanvasElement {
+  static render(worldMap: WorldMap, highlightedCountries: any[] = [], highlightCountries: Country[] = [], showArmies: boolean = false, currentPlayer: any = null): HTMLCanvasElement {
     const map = worldMap.getMap();
     const countries = worldMap.getCountries?.() || [];
     // Log all home country names
@@ -117,8 +118,16 @@ export class Renderer {
       // Draw text with appropriate color - light green for highlighted countries, white for others
       ctx.fillStyle = shouldHighlight ? '#90EE90' : 'white';  // Light green for highlighted countries
       ctx.fillText(displayName, cx, cy);
+      // --- Army display logic ---
+      let showArmy = false;
       if (showArmies) {
-        // Draw armies below the name, formatted as 100k, 45k, etc.
+        showArmy = true;
+      } else if (currentPlayer && country.owner === currentPlayer && !currentPlayer.isAI) {
+        showArmy = true;
+      } else if (currentPlayer && typeof currentPlayer.armyKnown === 'function' && currentPlayer.armyKnown(country) && !currentPlayer.isAI) {
+        showArmy = true;
+      }
+      if (showArmy) {
         const armies = country.armies || 0;
         const armiesText = `${Math.round(armies / 1000)}k`;
         ctx.font = 'bold 9px Verdana, Geneva, sans-serif';
@@ -264,5 +273,64 @@ export class Renderer {
       return [200, 200, 200];
     }
     return [255, 255, 255]; // fallback (should not happen, now white)
+  }
+
+  /**
+   * Draws a multi-layered glow/contour effect for a country using its border and coordinates.
+   * @param ctx CanvasRenderingContext2D
+   * @param country Country object (must have .border and .coordinates)
+   * @param colorStart [r,g,b] array for the outermost border
+   * @param colorEnd [r,g,b] array for the innermost border and fill
+   */
+  static drawCountryGlow(ctx: CanvasRenderingContext2D, country: Country, colorStart: [number, number, number], colorEnd: [number, number, number]) {
+    // Helper to interpolate between two colors
+    function lerpColor(a: [number, number, number], b: [number, number, number], t: number): [number, number, number] {
+      return [
+        Math.round(a[0] + (b[0] - a[0]) * t),
+        Math.round(a[1] + (b[1] - a[1]) * t),
+        Math.round(a[2] + (b[2] - a[2]) * t),
+      ];
+    }
+    // Use a Set for fast lookup and eroding
+    let pixels = new Set(country.coordinates.map(([x, y]) => `${x},${y}`));
+    for (let layer = 0; layer < 10; ++layer) {
+      // Find border pixels in current shape
+      const border: [number, number][] = [];
+      for (const key of pixels) {
+        const [x, y] = key.split(',').map(Number);
+        // 4-connected neighbors
+        const neighbors = [
+          [x-1, y], [x+1, y], [x, y-1], [x, y+1]
+        ];
+        for (const [nx, ny] of neighbors) {
+          if (!pixels.has(`${nx},${ny}`)) {
+            border.push([x, y]);
+            break;
+          }
+        }
+      }
+      // Interpolate color for this layer
+      const t = layer / 9;
+      const color = lerpColor(colorStart, colorEnd, t);
+      ctx.save();
+      ctx.fillStyle = `rgb(${color[0]},${color[1]},${color[2]})`;
+      for (const [x, y] of border) {
+        ctx.fillRect(x, y, 1, 1);
+      }
+      ctx.restore();
+      // Erode: remove border pixels
+      for (const [x, y] of border) {
+        pixels.delete(`${x},${y}`);
+      }
+      if (pixels.size === 0) break;
+    }
+    // Fill the remaining interior with colorEnd
+    ctx.save();
+    ctx.fillStyle = `rgb(${colorEnd[0]},${colorEnd[1]},${colorEnd[2]})`;
+    for (const key of pixels) {
+      const [x, y] = key.split(',').map(Number);
+      ctx.fillRect(x, y, 1, 1);
+    }
+    ctx.restore();
   }
 }

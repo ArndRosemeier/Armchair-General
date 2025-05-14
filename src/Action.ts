@@ -18,7 +18,7 @@ export abstract class Action {
    * @param amount Optional amount parameter (default 0)
    * @returns A string describing the result or outcome of the action.
    */
-  abstract Act(countries: Country[], activePlayer: Player, currentGame: Game, amount?: number): string | null;
+  abstract Act(countries: Country[], activePlayer: Player, currentGame: Game, amount?: number): Promise<string | null>;
   /**
    * Returns null if this action does not require an amount, or [min, max] if it does.
    * @param countries List of Country objects currently selected

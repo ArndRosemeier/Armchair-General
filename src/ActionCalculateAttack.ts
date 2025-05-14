@@ -37,7 +37,7 @@ export class ActionCalculateAttack extends Action {
   /**
    * Instead of performing the attack, simply calculate and return the attack chance as a string.
    */
-  Act(countries: Country[], activePlayer: Player, currentGame: Game, amount: number = 0): string | null {
+  async Act(countries: Country[], activePlayer: Player, currentGame: Game, amount: number = 0): Promise<string | null> {
     if (!currentGame) {
       return 'Internal error: currentGame is required.';
     }

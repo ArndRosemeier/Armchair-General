@@ -25,7 +25,7 @@ export class ActionBuyArmies extends Action {
    * @param currentGame The current game instance
    * @param amount Number of armies to buy
    */
-  Act(countries: Country[], activePlayer: Player, currentGame: Game, amount: number = 0): string | null {
+  async Act(countries: Country[], activePlayer: Player, currentGame: Game, amount: number = 0): Promise<string | null> {
     if (!currentGame) {
       return 'Internal error: currentGame is required.';
     }

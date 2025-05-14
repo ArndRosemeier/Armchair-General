@@ -2,6 +2,7 @@ import { Action } from './Action';
 import { Country } from './Country';
 import { Player } from './Player';
 import { Game } from './Game';
+import { AttackAnimation } from './AttackArrow';
 
 export class ActionAttack extends Action {
   /**
@@ -29,30 +30,65 @@ export class ActionAttack extends Action {
     return `Attack ${toCountry.name} from ${fromCountry.name}`;
   }
 
-  Act(countries: Country[], activePlayer: Player, currentGame: Game, amount: number = 0): string | null {
+  async Act(countries: Country[], activePlayer: Player, currentGame: Game, amount: number = 0): Promise<string | null> {
     if (!currentGame) {
-      return 'Internal error: currentGame is required.';
+      throw new Error('Internal error: currentGame is required.');
     }
     if (countries.length < 2) {
-      return 'Select source and target countries to attack.';
+      throw new Error('Select source and target countries to attack.');
     }
     const fromCountry = countries[countries.length - 2];
     const toCountry = countries[countries.length - 1];
     if (fromCountry.owner !== activePlayer) {
-      return 'You must own the attacking country.';
+      throw new Error('You must own the attacking country.');
     }
     const isNeighbor = fromCountry.neighbors.includes(toCountry);
     const isNaval = fromCountry.oceanBorder.length > 0 && toCountry.oceanBorder.length > 0;
     if (!isNeighbor && !isNaval) {
-      return 'Target country must be a neighbor or reachable by naval attack.';
+      throw new Error('Target country must be a neighbor or reachable by naval attack.');
     }
     if (toCountry.owner === activePlayer) {
-      return 'Cannot attack your own country.';
+      throw new Error('Cannot attack your own country.');
     }
     // Actual combat logic
     if (amount <= 0 || amount >= fromCountry.armies) {
-      return 'Invalid number of armies committed.';
+      throw new Error('Invalid number of armies committed.');
     }
+    // Show attack visualization and block game flow for 10 seconds
+    if (!activePlayer.game) throw new Error('ActionAttack: activePlayer.game is missing');
+    if (!activePlayer.game.gui) throw new Error('ActionAttack: activePlayer.game.gui is missing');
+    const gui = activePlayer.game.gui;
+    const mapCanvas = gui.getWorldMapCanvas();
+    const parent = mapCanvas.parentElement;
+    if (!parent) throw new Error('ActionAttack: mapCanvas.parentElement is null');
+    (parent as HTMLElement).style.position = 'relative';
+    // Remove any existing overlay
+    let oldOverlay = document.getElementById('attack-animation-overlay') as HTMLCanvasElement | null;
+    if (oldOverlay) {
+      oldOverlay.parentElement?.removeChild(oldOverlay);
+    }
+    // Create overlay
+    let overlay = document.createElement('canvas');
+    overlay.id = 'attack-animation-overlay';
+    overlay.width = mapCanvas.width;
+    overlay.height = mapCanvas.height;
+    overlay.style.position = 'absolute';
+    overlay.style.left = '0';
+    overlay.style.top = '0';
+    overlay.style.pointerEvents = 'none';
+    overlay.style.zIndex = '9999';
+    overlay.style.width = '100%';
+    overlay.style.height = '100%';
+    overlay.style.background = 'rgba(255,255,255,0.01)';
+    parent.appendChild(overlay);
+    // Draw visualization
+    const animation = new AttackAnimation(overlay, fromCountry, toCountry);
+    animation.start();
+    // Yield to the browser so it can paint the overlay
+    await new Promise(r => setTimeout(r, 0));
+    // Wait 1 second (was 10 seconds)
+    await new Promise(r => setTimeout(r, 1000));
+    overlay?.parentElement?.removeChild(overlay);
     // Calculate chance
     const chance = ActionAttack.AttackChance(fromCountry.armies, toCountry.armies, currentGame.worldMap.distance(fromCountry, toCountry) || 0, toCountry.fortified, currentGame);
     const roll = Math.random();
@@ -70,7 +106,7 @@ export class ActionAttack extends Action {
       // Defenders obliterated, attackers occupy with portion of amount based on delta
       // The closer the roll to chance, the fewer attackers remain
       // E.g., if delta is small, more attackers lost
-      // Let's use: survivors = Math.max(1, Math.round(amount * delta))
+      // Let's use: survivors = Math.max(1, Math.round(amount * Math.sqrt(delta)))
       let survivors = Math.max(1, Math.round(amount * Math.sqrt(delta)));
       // Round survivors to nearest 1000, minimum 1000 if any survive
       if (survivors > 0) {
@@ -78,11 +114,28 @@ export class ActionAttack extends Action {
       }
       toCountry.armies = survivors;
       toCountry.fortified = false;
+      // --- Remove player from game if they lost their last country ---
+      if (previousOwner && previousOwner.ownedCountries.length === 0 && currentGame.players.includes(previousOwner)) {
+        currentGame.players = currentGame.players.filter(p => p !== previousOwner);
+        if (currentGame.activePlayerIndex >= currentGame.players.length) {
+          currentGame.activePlayerIndex = 0;
+        }
+      }
+      if (activePlayer.ownedCountries.length === 0 && currentGame.players.includes(activePlayer)) {
+        currentGame.players = currentGame.players.filter(p => p !== activePlayer);
+        if (currentGame.activePlayerIndex >= currentGame.players.length) {
+          currentGame.activePlayerIndex = 0;
+        }
+      }
+      // --- Remove conquered country from all players' knowledge arrays ---
+      for (const player of currentGame.players) {
+        player.knowledge = player.knowledge.filter(k => k.country !== toCountry);
+      }
       resultMsg = `Attack successful! ${survivors} of your ${amount} armies occupy ${toCountry.name}.`;
     } else {
       // Attack repelled
       // All attackers lost, defenders diminished by portion based on delta
-      // defenders lost = Math.round(toCountry.armies * delta)
+      // defenders lost = Math.round(toCountry.armies * Math.sqrt(delta))
       let defendersLost = Math.round(toCountry.armies * Math.sqrt(delta));
       // Round defendersLost to nearest 1000, minimum 1000 if any lost
       if (defendersLost > 0) {
@@ -96,7 +149,6 @@ export class ActionAttack extends Action {
       resultMsg = `Attack failed! All ${amount} attacking armies lost. Defenders lost ${defendersLost} troops.`;
     }
     return resultMsg;
-
   }
 
   /**

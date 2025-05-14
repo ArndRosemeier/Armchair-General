@@ -8,6 +8,7 @@ import { ActionCalculateAttack } from './ActionCalculateAttack';
 import { ActionMove } from './ActionMove';
 import { ActionBuyArmies } from './ActionBuyArmies';
 import { Game } from './Game';
+import { showWinDialog } from './WinDialog';
 
 export class GameGui {
   private state: string;
@@ -252,7 +253,7 @@ export class GameGui {
         const known = this.currentGame.activePlayer.getKnownCountries();
         highlightCountries = known.owned.concat(known.known);
       }
-      this.worldMapCanvas = Renderer.render(this.currentGame.worldMap, [], highlightCountries, Game.showArmies);
+      this.worldMapCanvas = Renderer.render(this.currentGame.worldMap, [], highlightCountries, Game.showArmies, this.currentGame.activePlayer);
       this.mapDirty = false;
     }
     return this.worldMapCanvas;
@@ -280,6 +281,19 @@ export class GameGui {
    * Called whenever a new turn starts (after startTurn is called on the active player).
    */
   async turnStarted() {
+    // --- WIN CONDITION CHECK ---
+    if (this.currentGame && this.currentGame.activePlayer &&
+        this.currentGame.activePlayer.IncomeShare >= Game.INCOME_SHARE_WIN) {
+      showWinDialog(
+        this.currentGame.activePlayer.name,
+        Game.INCOME_SHARE_WIN * 100,
+        () => { this.canceled = true; }
+      );
+      this.canceled = true;
+      return;
+    }
+    // Redraw the map and log at the start of each turn (only once per turn)
+    this.renderMainGui(this.rootContainer as HTMLElement, this.currentGame);
     if (this.canceled) return;
     if (!this.currentGame?.activePlayer?.isAI) return;
     const ai = this.currentGame.activePlayer.AI;
@@ -289,16 +303,21 @@ export class GameGui {
       if (this.canceled) return;
       const acted = await ai.takeAction();
       this.markMapDirty();
+      // Only render, do not log, after each AI action
       this.renderMainGui(this.rootContainer as HTMLElement, this.currentGame);
 
       if (acted) {
-        setTimeout(() => doOneAction(), 400); // Schedule next action
+        setTimeout(() => doOneAction(), 100); // Schedule next action
       } else {
         // End turn and move to next player
         this.currentGame.nextTurn();
-        this.renderMainGui(this.rootContainer as HTMLElement, this.currentGame);
+        this.markMapDirty();
+        // Do not render or log here; turnStarted will be called for the next player
         if (this.currentGame.activePlayer.isAI) {
-          setTimeout(() => this.turnStarted(), 400);
+          setTimeout(() => this.turnStarted(), 100);
+        } else {
+          // For human, call turnStarted to trigger log/render for the new turn
+          this.turnStarted();
         }
       }
     };
@@ -627,6 +646,29 @@ export class GameGui {
           moneySpan.textContent = `💰 ${player.money}`;
           moneySpan.style.marginLeft = '8px';
           li.appendChild(moneySpan);
+
+          // --- Progress bar for income share ---
+          const progressBarContainer = document.createElement('span');
+          progressBarContainer.style.display = 'inline-block';
+          progressBarContainer.style.width = '54px';
+          progressBarContainer.style.height = '12px';
+          progressBarContainer.style.marginLeft = '8px';
+          progressBarContainer.style.verticalAlign = 'middle';
+          progressBarContainer.style.background = '#222';
+          progressBarContainer.style.border = '1px solid #444';
+          progressBarContainer.style.borderRadius = '6px';
+          progressBarContainer.style.overflow = 'hidden';
+
+          const fill = document.createElement('span');
+          const share = Math.min(player.IncomeShare / Game.INCOME_SHARE_WIN, 1);
+          fill.style.display = 'inline-block';
+          fill.style.height = '100%';
+          fill.style.width = `${Math.round(share * 100)}%`;
+          fill.style.background = share >= 1 ? 'linear-gradient(90deg,#43cea2,#ffd700)' : 'linear-gradient(90deg,#43cea2,#185a9d)';
+          fill.style.transition = 'width 0.3s';
+          progressBarContainer.title = `Income share: ${(player.IncomeShare*100).toFixed(1)}% (win at ${(Game.INCOME_SHARE_WIN*100).toFixed(0)}%)`;
+          progressBarContainer.appendChild(fill);
+          li.appendChild(progressBarContainer);
         }
         playerList.appendChild(li);
       }
@@ -673,6 +715,7 @@ export class GameGui {
     endTurnBtn.onclick = () => {
       if (this.currentGame) {
         this.currentGame.nextTurn();
+        this.markMapDirty();
         this.renderMainGui(this.rootContainer as HTMLElement, this.currentGame);
         this.turnStarted();
       }
