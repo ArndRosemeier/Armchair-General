@@ -2,6 +2,7 @@ import { WorldMap } from './WorldMap';
 import { Player } from './Player';
 import { Country } from './Country';
 import { AI } from './AI';
+import { GameGui } from './GameGui';
 
 /**
  * Core game logic class for RiskTs.
@@ -19,6 +20,7 @@ export class Game {
   players: Player[];
   gameTurn: number;
   activePlayerIndex: number;
+  gui?: GameGui;
 
   constructor(worldMap: WorldMap, players: Player[] = []) {
     this.worldMap = worldMap;
@@ -65,7 +67,7 @@ export class Game {
    * Initializes a new game with the given world map and players.
    * Returns a new Game instance.
    */
-  static initNewGame(worldMap: WorldMap, players: Player[]): Game {
+  static initNewGame(worldMap: WorldMap, players: Player[], gui?: GameGui): Game {
     // 1. Give each player initial player money
     for (const player of players) {
       player.money = Game.initialPlayerMoney;
@@ -137,8 +139,10 @@ export class Game {
       }
     }
     const game = new Game(worldMap, players);
+    if (gui) game.gui = gui;
     // Now set the game reference on each AI instance
     for (const player of players) {
+      player.game = game;
       if (player.isAI && player.AI) {
         player.AI.game = game;
         player.AI.player = player;

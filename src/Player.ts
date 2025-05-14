@@ -1,5 +1,6 @@
 import { Country } from './Country';
 import { Strategy } from './Strategy';
+import { Game } from './Game';
 
 export interface CountryKnowledge {
   country: Country;
@@ -21,6 +22,7 @@ import { AI } from './AI';
 export class Player {
   static readonly ACTIONS_PER_TURN = 5;
   actionsLeft: number = Player.ACTIONS_PER_TURN;
+  game?: Game;
 
   /**
    * Resets the available actions to the turn limit.
