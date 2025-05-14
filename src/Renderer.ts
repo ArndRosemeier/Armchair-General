@@ -1,5 +1,6 @@
 import { WorldMap, OCEAN, LAND } from './WorldMap';
 import { Country } from './Country';
+import { createNoise2D } from 'simplex-noise';
 
 export class Renderer {
   // Generate a visually distinct color for each country using HSL
@@ -8,6 +9,9 @@ export class Renderer {
 
 
   static drawBorders: boolean = true;
+
+  private static _oceanNoise2D = createNoise2D();
+  private static _landNoise2D = createNoise2D();
 
   /**
    * Renders the world map. Optionally highlights given countries with a yellow overlay.
@@ -34,7 +38,7 @@ export class Renderer {
     for (let y = 0; y < height; y++) {
       for (let x = 0; x < width; x++) {
         const value = map[y][x];
-        const [r, g, b] = Renderer.getRGBForValue(value, countries);
+        const [r, g, b] = Renderer.getRGBForValue(value, countries, x, y, map);
         const idx = (y * width + x) * 4;
         data[idx] = r;
         data[idx + 1] = g;
@@ -251,26 +255,131 @@ export class Renderer {
     return canvas;
   }
 
-  private static getRGBForValue(value: number, countries: any[]): [number, number, number] {
-    if (value === OCEAN) return [30, 144, 255]; // blue
-    if (value === LAND) return [34, 139, 34];   // green
+  private static getRGBForValue(value: number, countries: any[], x?: number, y?: number, map?: number[][]): [number, number, number] {
+    if (value === OCEAN) {
+      // Enhanced ocean rendering (no sun reflection)
+      x = x ?? 0;
+      y = y ?? 0;
+      map = map ?? [];
+      const width = map[0]?.length || 1024;
+      const height = map.length || 768;
+      // Vertical gradient
+      const t = y / height;
+      let r = Math.round(30 * (1 - t) + 10 * t);
+      let g = Math.round(144 * (1 - t) + 80 * t);
+      let b = Math.round(255 * (1 - t) + 180 * t);
+      // Noise for waves
+      const n = Renderer._oceanNoise2D(x * 0.03, y * 0.03);
+      const wave = Math.floor(18 * n);
+      r += wave; g += wave; b += wave;
+      // Foam near land
+      let foam = false;
+      if (map && x > 0 && y > 0 && x < width - 1 && y < height - 1) {
+        for (const [dx, dy] of [[1,0],[-1,0],[0,1],[0,-1]]) {
+          const nx = x + dx, ny = y + dy;
+          if (map[ny][nx] !== OCEAN) {
+            foam = true;
+            break;
+          }
+        }
+      }
+      if (foam) {
+        r = Math.min(255, r + 40);
+        g = Math.min(255, g + 40);
+        b = Math.min(255, b + 40);
+      }
+      return [r, g, b];
+    }
+    if (value === LAND) {
+      // Multi-tone green with noise
+      x = x ?? 0;
+      y = y ?? 0;
+      map = map ?? [];
+      const width = map[0]?.length || 1024;
+      const height = map.length || 768;
+      const n = Renderer._landNoise2D(x * 0.04, y * 0.04);
+      // Blend between two greens
+      const g1 = [34, 139, 34];
+      const g2 = [80, 180, 80];
+      const t = 0.5 + 0.5 * n; // -1..1 -> 0..1
+      let r = Math.round(g1[0] * (1 - t) + g2[0] * t);
+      let g = Math.round(g1[1] * (1 - t) + g2[1] * t);
+      let b = Math.round(g1[2] * (1 - t) + g2[2] * t);
+      // Optional: edge highlight for coast
+      let coast = false;
+      if (map && x > 0 && y > 0 && x < width - 1 && y < height - 1) {
+        for (const [dx, dy] of [[1,0],[-1,0],[0,1],[0,-1]]) {
+          const nx = x + dx, ny = y + dy;
+          if (map[ny][nx] === OCEAN) {
+            coast = true;
+            break;
+          }
+        }
+      }
+      if (coast) {
+        // Lighten for beach
+        r = Math.min(255, r + 30);
+        g = Math.min(255, g + 30);
+        b = Math.min(255, b + 30);
+      }
+      return [r, g, b];
+    }
     if (value >= 0) {
       const country = countries[value];
+      // Get base color
+      let base: [number, number, number] = [200, 200, 200];
       if (country) {
-        // If the country has an owner with RGBColor, use that
         if (country.owner && typeof country.owner.RGBColor === 'string') {
           const rgb = country.owner.RGBColor.split(',').map(Number);
           if (rgb.length === 3 && rgb.every((v: number) => !isNaN(v))) {
-            return [rgb[0], rgb[1], rgb[2]];
+            base = [rgb[0], rgb[1], rgb[2]];
           }
-        }
-        // Otherwise use the country's own color property
-        if (country.color) {
-          return country.color;
+        } else if (country.color) {
+          base = country.color;
         }
       }
-      // fallback if not available
-      return [200, 200, 200];
+      x = x ?? 0;
+      y = y ?? 0;
+      map = map ?? [];
+      const width = map[0]?.length || 1024;
+      const height = map.length || 768;
+      // Higher frequency, higher amplitude noise for visible terrain
+      const n = Renderer._landNoise2D(x * 0.02, y * 0.02);
+      const delta = Math.round(18 * n); // -18 to +18
+      // Blend between more distinct earthy tones
+      const earth1 = base;
+      const earth2 = [
+        Math.max(0, base[0] - 32),
+        Math.max(0, base[1] - 48),
+        Math.max(0, base[2] - 32)
+      ];
+      const t = 0.5 + 0.5 * n;
+      let r = Math.round(earth1[0] * (1 - t) + earth2[0] * t) + delta;
+      let g = Math.round(earth1[1] * (1 - t) + earth2[1] * t) + delta;
+      let b = Math.round(earth1[2] * (1 - t) + earth2[2] * t) + delta;
+      // More pronounced hill shading
+      const shade = Renderer._landNoise2D(x * 0.006 + 100, y * 0.006 + 100);
+      const shadeDelta = Math.round(18 * shade);
+      r = Math.min(255, Math.max(0, r + shadeDelta));
+      g = Math.min(255, Math.max(0, g + shadeDelta));
+      b = Math.min(255, Math.max(0, b + shadeDelta));
+      // Subtle coast highlight
+      let coast = false;
+      if (map && x > 0 && y > 0 && x < width - 1 && y < height - 1) {
+        for (const [dx, dy] of [[1,0],[-1,0],[0,1],[0,-1]]) {
+          const nx = x + dx, ny = y + dy;
+          if (map[ny][nx] === OCEAN) {
+            coast = true;
+            break;
+          }
+        }
+      }
+      if (coast) {
+        r = Math.min(255, r + 12);
+        g = Math.min(255, g + 12);
+        b = Math.min(255, b + 12);
+      }
+      return [r, g, b];
     }
     return [255, 255, 255]; // fallback (should not happen, now white)
   }
@@ -324,11 +433,43 @@ export class Renderer {
       }
       if (pixels.size === 0) break;
     }
-    // Fill the remaining interior with colorEnd
+    // Fill the remaining interior with the new country effect
     ctx.save();
-    ctx.fillStyle = `rgb(${colorEnd[0]},${colorEnd[1]},${colorEnd[2]})`;
     for (const key of pixels) {
       const [x, y] = key.split(',').map(Number);
+      // Use the same effect as getRGBForValue for country pixels
+      let base: [number, number, number] = [200, 200, 200];
+      if (country) {
+        if (country.owner && typeof country.owner.RGBColor === 'string') {
+          const rgb = country.owner.RGBColor.split(',').map(Number);
+          if (rgb.length === 3 && rgb.every((v: number) => !isNaN(v))) {
+            base = [rgb[0], rgb[1], rgb[2]];
+          }
+        } else if (country.color) {
+          base = country.color;
+        }
+      }
+      // Higher frequency, higher amplitude noise for visible terrain
+      const n = Renderer._landNoise2D(x * 0.02, y * 0.02);
+      const delta = Math.round(18 * n); // -18 to +18
+      // Blend between more distinct earthy tones
+      const earth1 = base;
+      const earth2 = [
+        Math.max(0, base[0] - 32),
+        Math.max(0, base[1] - 48),
+        Math.max(0, base[2] - 32)
+      ];
+      const t = 0.5 + 0.5 * n;
+      let r = Math.round(earth1[0] * (1 - t) + earth2[0] * t) + delta;
+      let g = Math.round(earth1[1] * (1 - t) + earth2[1] * t) + delta;
+      let b = Math.round(earth1[2] * (1 - t) + earth2[2] * t) + delta;
+      // More pronounced hill shading
+      const shade = Renderer._landNoise2D(x * 0.006 + 100, y * 0.006 + 100);
+      const shadeDelta = Math.round(18 * shade);
+      r = Math.min(255, Math.max(0, r + shadeDelta));
+      g = Math.min(255, Math.max(0, g + shadeDelta));
+      b = Math.min(255, Math.max(0, b + shadeDelta));
+      ctx.fillStyle = `rgb(${r},${g},${b})`;
       ctx.fillRect(x, y, 1, 1);
     }
     ctx.restore();

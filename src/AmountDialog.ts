@@ -44,7 +44,7 @@ export function showAmountDialog(min: number, max: number, initial: number = min
     box.appendChild(maxInfo);
 
     // Amount display
-    let amount = Math.max(min, Math.min(max, initial));
+    let amount = Math.max(min, Math.min(max, max));
     const amountDisplay = document.createElement('div');
     amountDisplay.textContent = amount.toLocaleString();
     amountDisplay.style.fontSize = '2rem';
@@ -80,6 +80,7 @@ export function showAmountDialog(min: number, max: number, initial: number = min
     btnRow.appendChild(makeBtn('-10k', () => updateAmount(amount - 10000)));
     btnRow.appendChild(makeBtn('-1k', () => updateAmount(amount - 1000)));
     btnRow.appendChild(makeBtn('Min', () => updateAmount(min)));
+    btnRow.appendChild(makeBtn('Half', () => updateAmount(Math.floor(max / 2 / 1000) * 1000)));
     btnRow.appendChild(makeBtn('Max', () => updateAmount(max)));
     btnRow.appendChild(makeBtn('+1k', () => updateAmount(amount + 1000)));
     btnRow.appendChild(makeBtn('+10k', () => updateAmount(amount + 10000)));

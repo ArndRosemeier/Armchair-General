@@ -9,6 +9,8 @@ import { ActionMove } from './ActionMove';
 import { ActionBuyArmies } from './ActionBuyArmies';
 import { Game } from './Game';
 import { showWinDialog } from './WinDialog';
+import { FishOverlay } from './FishOverlay';
+import { OCEAN } from './WorldMap';
 
 export class GameGui {
   private state: string;
@@ -451,92 +453,106 @@ export class GameGui {
         }
         lastGlowCountry = null;
       }
-      // Add mouse click detection
-      if (game && game.worldMap) {
-        mapCanvas.addEventListener('mousedown', (e: MouseEvent) => {
-          const mapWidth = mapCanvas.width;
-          const mapHeight = mapCanvas.height;
-          // Use offsetX/Y and scale by client size for accuracy
-          const x = Math.floor(e.offsetX * (mapWidth / mapCanvas.clientWidth));
-          const y = Math.floor(e.offsetY * (mapHeight / mapCanvas.clientHeight));
-          const map = game.worldMap.getMap();
-          const countries = game.worldMap.getCountries();
-          let clickedCountry = null;
-          if (x >= 0 && y >= 0 && y < map.length && x < map[0].length) {
-            const value = map[y][x];
-            if (value >= 0 && countries[value]) {
-              clickedCountry = countries[value];
-              // Counter check: is (x, y) in clickedCountry.coordinates?
-              if (!clickedCountry.coordinates.some(([cx, cy]: [number, number]) => cx === x && cy === y)) {
-                console.warn(`[GameGui] Click at (${x},${y}) is not in coordinates of country: ${clickedCountry.name}`);
-              }
-              this.clickedCountryNames.push(clickedCountry.name);
-
-              // --- Draw glow effect ---
-              ensureGlowCanvas();
-              clearGlow();
-              if (glowCanvas && clickedCountry) {
-                const ctx = glowCanvas.getContext('2d');
-                if (ctx) {
-                  Renderer.drawCountryGlow(ctx, clickedCountry, [0,0,0], clickedCountry.color);
-                  lastGlowCountry = clickedCountry;
-                  // --- Draw country name and armies on top of glow ---
-                  const [cx, cy] = clickedCountry.center ? clickedCountry.center() : [0, 0];
-                  const displayName = clickedCountry.fortified ? '🛡️ ' + clickedCountry.name : clickedCountry.name;
-                  ctx.save();
-                  ctx.font = 'bold 10px Verdana, Geneva, sans-serif';
-                  ctx.textAlign = 'center';
-                  ctx.textBaseline = 'middle';
-                  ctx.lineWidth = 3;
-                  ctx.strokeStyle = 'black';
-                  ctx.strokeText(displayName, cx, cy);
-                  ctx.fillStyle = 'white';
-                  ctx.fillText(displayName, cx, cy);
-                  if (Game.showArmies && typeof clickedCountry.armies === 'number') {
-                    const armiesText = `${Math.round(clickedCountry.armies / 1000)}k`;
-                    ctx.font = 'bold 9px Verdana, Geneva, sans-serif';
-                    ctx.lineWidth = 2;
-                    ctx.strokeStyle = 'black';
-                    ctx.strokeText(armiesText, cx, cy + 13);
-                    ctx.fillStyle = '#FFD700';
-                    ctx.fillText(armiesText, cx, cy + 13);
-                  }
-                  ctx.restore();
-                }
-              }
-
-              // Update action buttons
-              this.updateActionButtons();
-              // Show country info in sidebar
-              const infoPanel = document.getElementById('country-info-panel');
-              if (infoPanel && game && game.activePlayer && typeof game.gameTurn === 'number') {
-                const info = game.activePlayer.getCountryInfo(clickedCountry, game.gameTurn);
-                infoPanel.innerHTML = `
-                  <b>Country Info</b><br>
-                  <div><b>Name:</b> ${info.name}</div>
-                  <div><b>Owner:</b> ${info.owner ? info.owner.name : 'None'}</div>
-                  <div><b>Income:</b> ${info.income !== undefined ? info.income : '?'}</div>
-                  <div><b>Army:</b> ${info.army !== undefined ? info.army : '?'}</div>
-                  <div><b>Recency:</b> ${info.recency !== undefined ? info.recency : '?'}</div>
-                `;
-              }
-              // Show last clicked country info in sidebar
-              const lastClickedCountryInfoPanel = document.getElementById('last-clicked-country-info-panel');
-              if (lastClickedCountryInfoPanel && game && game.activePlayer && typeof game.gameTurn === 'number') {
-                const info = game.activePlayer.getCountryInfo(clickedCountry, game.gameTurn);
-                lastClickedCountryInfoPanel.innerHTML = `
-                  <b>Last Clicked Country Info</b><br>
-                  <div><b>Name:</b> ${info.name}</div>
-                  <div><b>Owner:</b> ${info.owner ? info.owner.name : 'None'}</div>
-                  <div><b>Income:</b> ${info.income !== undefined ? info.income : '?'}</div>
-                  <div><b>Army:</b> ${info.army !== undefined ? info.army : '?'}</div>
-                  <div><b>Recency:</b> ${info.recency !== undefined ? info.recency : '?'}</div>
-                `;
-              }
-            } 
-          }
-        });
+      // --- Add fish overlay (only once per render) ---
+      if (!(mapArea as any)._fishOverlay) {
+        const map = game.worldMap.getMap();
+        const width = mapCanvas.width;
+        const height = mapCanvas.height;
+        const getOcean = (x: number, y: number) => {
+          if (x < 0 || y < 0 || y >= map.length || x >= map[0].length) return false;
+          return map[y][x] === OCEAN;
+        };
+        (mapArea as any)._fishOverlay = new FishOverlay(mapArea, width, height, getOcean);
       }
+      // --- Fix: Ensure only one click handler is attached ---
+      if ((mapCanvas as any)._countryClickHandler) {
+        mapCanvas.removeEventListener('mousedown', (mapCanvas as any)._countryClickHandler);
+      }
+      const countryClickHandler = (e: MouseEvent) => {
+        const mapWidth = mapCanvas.width;
+        const mapHeight = mapCanvas.height;
+        // Use offsetX/Y and scale by client size for accuracy
+        const x = Math.floor(e.offsetX * (mapWidth / mapCanvas.clientWidth));
+        const y = Math.floor(e.offsetY * (mapHeight / mapCanvas.clientHeight));
+        const map = game.worldMap.getMap();
+        const countries = game.worldMap.getCountries();
+        let clickedCountry = null;
+        if (x >= 0 && y >= 0 && y < map.length && x < map[0].length) {
+          const value = map[y][x];
+          if (value >= 0 && countries[value]) {
+            clickedCountry = countries[value];
+            // Counter check: is (x, y) in clickedCountry.coordinates?
+            if (!clickedCountry.coordinates.some(([cx, cy]: [number, number]) => cx === x && cy === y)) {
+              console.warn(`[GameGui] Click at (${x},${y}) is not in coordinates of country: ${clickedCountry.name}`);
+            }
+            this.clickedCountryNames.push(clickedCountry.name);
+
+            // --- Draw glow effect ---
+            ensureGlowCanvas();
+            clearGlow();
+            if (glowCanvas && clickedCountry) {
+              const ctx = glowCanvas.getContext('2d');
+              if (ctx) {
+                Renderer.drawCountryGlow(ctx, clickedCountry, [0,0,0], clickedCountry.color);
+                lastGlowCountry = clickedCountry;
+                // --- Draw country name and armies on top of glow ---
+                const [cx, cy] = clickedCountry.center ? clickedCountry.center() : [0, 0];
+                const displayName = clickedCountry.fortified ? '🛡️ ' + clickedCountry.name : clickedCountry.name;
+                ctx.save();
+                ctx.font = 'bold 10px Verdana, Geneva, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.lineWidth = 3;
+                ctx.strokeStyle = 'black';
+                ctx.strokeText(displayName, cx, cy);
+                ctx.fillStyle = 'white';
+                ctx.fillText(displayName, cx, cy);
+                if (Game.showArmies && typeof clickedCountry.armies === 'number') {
+                  const armiesText = `${Math.round(clickedCountry.armies / 1000)}k`;
+                  ctx.font = 'bold 9px Verdana, Geneva, sans-serif';
+                  ctx.lineWidth = 2;
+                  ctx.strokeStyle = 'black';
+                  ctx.strokeText(armiesText, cx, cy + 13);
+                  ctx.fillStyle = '#FFD700';
+                  ctx.fillText(armiesText, cx, cy + 13);
+                }
+                ctx.restore();
+              }
+            }
+
+            // Update action buttons
+            this.updateActionButtons();
+            // Show country info in sidebar
+            const infoPanel = document.getElementById('country-info-panel');
+            if (infoPanel && game && game.activePlayer && typeof game.gameTurn === 'number') {
+              const info = game.activePlayer.getCountryInfo(clickedCountry, game.gameTurn);
+              infoPanel.innerHTML = `
+                <b>Country Info</b><br>
+                <div><b>Name:</b> ${info.name}</div>
+                <div><b>Owner:</b> ${info.owner ? info.owner.name : 'None'}</div>
+                <div><b>Income:</b> ${info.income !== undefined ? info.income : '?'}</div>
+                <div><b>Army:</b> ${info.army !== undefined ? info.army : '?'}</div>
+                <div><b>Recency:</b> ${info.recency !== undefined ? info.recency : '?'}</div>
+              `;
+            }
+            // Show last clicked country info in sidebar
+            const lastClickedCountryInfoPanel = document.getElementById('last-clicked-country-info-panel');
+            if (lastClickedCountryInfoPanel && game && game.activePlayer && typeof game.gameTurn === 'number') {
+              const info = game.activePlayer.getCountryInfo(clickedCountry, game.gameTurn);
+              lastClickedCountryInfoPanel.innerHTML = `
+                <b>Last Clicked Country Info</b><br>
+                <div><b>Name:</b> ${info.name}</div>
+                <div><b>Owner:</b> ${info.owner ? info.owner.name : 'None'}</div>
+                <div><b>Income:</b> ${info.income !== undefined ? info.income : '?'}</div>
+                <div><b>Army:</b> ${info.army !== undefined ? info.army : '?'}</div>
+                <div><b>Recency:</b> ${info.recency !== undefined ? info.recency : '?'}</div>
+              `;
+            }
+          } 
+        }
+      };
+      mapCanvas.addEventListener('mousedown', countryClickHandler);
+      (mapCanvas as any)._countryClickHandler = countryClickHandler;
     } else {
       const mapPlaceholder = document.createElement('div');
       mapPlaceholder.style.width = '100%';

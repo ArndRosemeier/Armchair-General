@@ -100,6 +100,8 @@ export class ActionAttack extends Action {
       const previousOwner = toCountry.owner;
       if (previousOwner) {
         previousOwner.ownedCountries = previousOwner.ownedCountries.filter(c => c !== toCountry);
+        // Remove conquered country from previous owner's plannedFortifications
+        previousOwner.plannedFortifications = previousOwner.plannedFortifications.filter(([country, _]) => country !== toCountry);
       }
       toCountry.owner = activePlayer;
       activePlayer.ownedCountries.push(toCountry);
