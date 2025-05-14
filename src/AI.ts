@@ -83,7 +83,7 @@ export class AI {
       // Calculate attack force (max possible, but must leave at least 1000 behind)
       const attackForce = Math.floor(attacker.armies * AI.ATTACK_COMMIT / 1000) * 1000;
       if (attackForce < 1000) continue;
-      opportunities.push(new Opportunity([attacker, country], attackForce, action, score));
+      opportunities.push(new Opportunity([attacker, country], attackForce, action, score * this.player.aggressivity));
     }
     return opportunities;
   }
@@ -92,7 +92,7 @@ export class AI {
    * Main method for AI to take its turn. Finds and executes the best opportunity if actions remain.
    * Returns true if an action was taken, false otherwise.
    */
-  takeAction(): boolean {
+  async takeAction(): Promise<boolean> {
     if (this.player.actionsLeft <= 0) return false;
     // With a chance of 0.2, do PlanSurpriseAttack if actionsLeft is 4 or more, but only if actionPlan is empty
     if (this.player.actionsLeft >= 4 && Math.random() < 0.2 && this.actionPlan.length === 0) {
@@ -135,9 +135,13 @@ export class AI {
       opportunity = this.findBestOpportunity();
     }
     if (!opportunity) return false;
-    const result = opportunity.action.Act(opportunity.countries, this.player, this.game, opportunity.amount);
+    const result = await opportunity.action.Act(opportunity.countries, this.player, this.game, opportunity.amount);
     if (fromActionPlan && result) {
       console.log('Action result (from actionPlan):', result);
+    }
+    // If the executed opportunity has a followUp and the actionPlan is empty, push it
+    if (opportunity.followUp && this.actionPlan.length === 0) {
+      this.actionPlan.push(opportunity.followUp);
     }
     this.player.useAction();
     return true;
@@ -219,7 +223,7 @@ export class AI {
 
   /**
    * Finds move opportunities where the source is always the owned country with the most armies.
-   * The target is either the owned land with the juiciest neighbor or the land with the fewest armies.
+   * The target is either the owned land with the a juicy target nearby or the land with the fewest armies.
    * Only creates move opportunities between owned countries.
    */
   FindMoveOpportunities(action: Action): Opportunity[] {
@@ -227,32 +231,52 @@ export class AI {
     if (this.player.ownedCountries.length === 0) return opportunities;
     // Find the strongest owned country (source)
     const strongest = this.player.ownedCountries.reduce((max, c) => c.armies > max.armies ? c : max, this.player.ownedCountries[0]);
-    // 1. Find the owned country with the juiciest neighbor
+    // 1. Find the owned country with the juiciest reachable non-owned country (using distance-based score)
     let bestTarget: Country | null = null;
     let bestScore = -Infinity;
+    let bestJuicy: Country | null = null;
     for (const owned of this.player.ownedCountries) {
-      for (const neighbor of owned.neighbors) {
-        if (neighbor.owner !== this.player) {
-          const score = this.countryScore(neighbor);
-          if (score > bestScore) {
-            bestScore = score;
-            bestTarget = owned;
-          }
+      const reachable = this.getReachableNonOwnedCountries(owned);
+      for (const { country: target, distance } of reachable) {
+        let distFactor = 1;
+        if (distance > 100) {
+          distFactor = Math.max(0, 1 - (distance - 100) / 900);
+        }
+        const score = this.countryScore(target) * distFactor;
+        if (score > bestScore) {
+          bestScore = score;
+          bestTarget = owned;
+          bestJuicy = target;
         }
       }
     }
     if (bestTarget && bestTarget !== strongest) {
-      // Move opportunity: move armies from strongest to the owned land with the juiciest neighbor
       const amount = Math.floor(strongest.armies * 0.5 / 1000) * 1000; // Move half armies, rounded
       if (amount > 0 && strongest !== bestTarget) {
-        opportunities.push(new Opportunity([strongest, bestTarget], amount, action, bestScore));
+        let followUp: Opportunity | null = null;
+        if (this.actionPlan.length === 0 && bestJuicy) {
+          // Simulate armies after move
+          const armiesAfter = bestTarget.armies + amount;
+          // Clone bestTarget to preserve prototype
+          const simulatedTarget = Object.create(bestTarget);
+          simulatedTarget.armies = armiesAfter;
+          // Check if attack is feasible after move
+          if (this.isAttackFeasible(simulatedTarget, bestJuicy, AI.ATTACK_COMMIT)) {
+            const attackAction = new ActionAttack();
+            const attackAmount = Math.floor(armiesAfter * AI.ATTACK_COMMIT / 1000) * 1000;
+            followUp = new Opportunity([bestTarget, bestJuicy], attackAmount, attackAction, 100);
+          }
+        }
+        opportunities.push(new Opportunity([strongest, bestTarget], amount, action, bestScore, followUp));
       }
     }
     // 2. Find the weakest owned country and check if it needs reinforcement
     const avgArmy = this.player.totalArmies() / this.player.ownedCountries.length;
     const weakest = this.player.ownedCountries.reduce((min, c) => c.armies < min.armies ? c : min, this.player.ownedCountries[0]);
     if (weakest.armies < avgArmy / 2 && weakest !== strongest) {
-      const amount = Math.floor(strongest.armies * 0.5 / 1000) * 1000; // Move half armies, rounded
+      const targetArmies = avgArmy / 2;
+      const needed = Math.floor((targetArmies - weakest.armies) / 1000) * 1000;
+      const amount = Math.max(0, Math.min(needed, strongest.armies - 1000));
       if (amount > 0 && strongest !== weakest) {
         opportunities.push(new Opportunity([strongest, weakest], amount, action, avgArmy - weakest.armies));
       }
@@ -284,7 +308,7 @@ export class AI {
    */
   FindBuyOpportunities(): Opportunity[] {
     const MoneyReserve = 2000000;
-    if (this.player.money <= MoneyReserve) return [];  
+    if (this.player.money <= MoneyReserve) return [];
 
     const opportunities: Opportunity[] = [];
     const action = new ActionBuyArmies();
@@ -306,17 +330,22 @@ export class AI {
         opportunities.push(new Opportunity([weakest], roundedAmount, action, score));
       }
     }
-    // 2. Reinforce the country with the juiciest neighbor
+    // 2. Reinforce the country with the juiciest reachable non-owned country (using distance-based score)
     let bestTarget: Country | null = null;
     let bestScore = -Infinity;
+    let bestJuicy: Country | null = null;
     for (const owned of this.player.ownedCountries) {
-      for (const neighbor of owned.neighbors) {
-        if (neighbor.owner !== this.player) {
-          const score = this.countryScore(neighbor);
-          if (score > bestScore) {
-            bestScore = score;
-            bestTarget = owned;
-          }
+      const reachable = this.getReachableNonOwnedCountries(owned);
+      for (const { country: target, distance } of reachable) {
+        let distFactor = 1;
+        if (distance > 100) {
+          distFactor = Math.max(0, 1 - (distance - 100) / 900);
+        }
+        const score = this.countryScore(target) * distFactor;
+        if (score > bestScore) {
+          bestScore = score;
+          bestTarget = owned;
+          bestJuicy = target;
         }
       }
     }
@@ -325,7 +354,19 @@ export class AI {
       const affordable = Math.floor((availableMoney - MoneyReserve) / armyCost);
       const roundedAffordable = Math.floor(affordable / 1000) * 1000;
       if (roundedAffordable > 0) {
-        opportunities.push(new Opportunity([bestTarget], roundedAffordable, action, bestScore * 1000));
+        let followUp: Opportunity | null = null;
+        if (this.actionPlan.length === 0 && bestJuicy) {
+          // Simulate armies after buy
+          const armiesAfter = bestTarget.armies + roundedAffordable;
+          const simulatedTarget = Object.create(bestTarget);
+          simulatedTarget.armies = armiesAfter;
+          if (this.isAttackFeasible(simulatedTarget, bestJuicy, AI.ATTACK_COMMIT)) {
+            const attackAction = new ActionAttack();
+            const attackAmount = Math.floor(armiesAfter * AI.ATTACK_COMMIT / 1000) * 1000;
+            followUp = new Opportunity([bestTarget, bestJuicy], attackAmount, attackAction, 100);
+          }
+        }
+        opportunities.push(new Opportunity([bestTarget], roundedAffordable, action, bestScore * 1000, followUp));
       }
     }
     return opportunities;
@@ -376,6 +417,24 @@ export class AI {
     }
     nonOwned.sort((a, b) => a.distance - b.distance);
     return nonOwned;
+  }
+
+  /**
+   * Returns all non-owned countries reachable from the given origin, with their distance, sorted by distance ascending.
+   */
+  getReachableNonOwnedCountries(origin: Country): { country: Country, distance: number }[] {
+    const worldMap = this.game.worldMap;
+    const allCountries = worldMap.getCountries();
+    const result: { country: Country, distance: number }[] = [];
+    for (const country of allCountries) {
+      if (country.owner === this.player) continue;
+      const dist = worldMap.distance(origin, country);
+      if (dist !== null) {
+        result.push({ country, distance: dist });
+      }
+    }
+    result.sort((a, b) => a.distance - b.distance);
+    return result;
   }
 
   /**
@@ -502,5 +561,27 @@ export class AI {
     if (bestOpp) {
       this.MakeAttackPlan(bestOpp);
     }
+  }
+
+  /**
+   * Determines if an attack from an origin country to a target country is feasible for this player.
+   * attackCommitPart: fraction of armies to commit (default 1)
+   */
+  isAttackFeasible(from: Country, to: Country, attackCommitPart: number = 0.8): boolean {
+    if (!from || !to) return false;
+    if (from.owner !== this.player) return false;
+    if (to.owner === this.player) return false;
+    if (from === to) return false;
+    const isNeighbor = from.neighbors.includes(to);
+    const isNaval = from.oceanBorder.length > 0 && to.oceanBorder.length > 0;
+    if (!isNeighbor && !isNaval) return false;
+    if (typeof from.armies !== 'number' || from.armies <= 1000) return false;
+    const estimatedDefense = this.countryDefenseEstimate(to);
+    const dist = this.game.worldMap.distance(from, to);
+    if (dist === null) return false;
+    const committedArmies = Math.floor(from.armies * attackCommitPart);
+    const chance = ActionAttack.AttackChance(committedArmies, estimatedDefense, dist, to.fortified, this.game);
+    if (chance < 0.7) return false;
+    return true;
   }
 }
