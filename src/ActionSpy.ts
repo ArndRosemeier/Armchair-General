@@ -58,4 +58,8 @@ export class ActionSpy extends Action {
   RequiresAmount(countries: Country[], activePlayer: Player, currentGame: Game): [number, number] | null {
     return null;
   }
+
+  get countryCountNeeded(): number {
+    return 1;
+  }
 }

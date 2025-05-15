@@ -11,12 +11,14 @@ import { Game } from './Game';
 import { showWinDialog } from './WinDialog';
 import { FishOverlay } from './FishOverlay';
 import { OCEAN } from './WorldMap';
+import { showActionLogDialog } from './ActionLogDialog';
 
 export class GameGui {
   private state: string;
-  private currentGame: any = null;
+  public currentGame: any = null;
   private rootContainer: HTMLElement | null = null;
-  private canceled: boolean = false;
+  public canceled: boolean = false;
+  private paused: boolean = false;
 
   // List of all clicked country names
   private clickedCountryNames: string[] = [];
@@ -28,9 +30,33 @@ export class GameGui {
   // Array of actions
   public actions: Action[];
 
+  // --- PAUSE/RESUME API ---
+  public pauseGame() {
+    this.paused = true;
+  }
+  public resumeGame() {
+    this.paused = false;
+  }
+  public isPaused() {
+    return this.paused;
+  }
+  private static _instance: GameGui | null = null;
+  public static getInstance(): GameGui | null {
+    return GameGui._instance;
+  }
+
   constructor() {
     this.state = 'initialized';
     this.actions = [new ActionSpy(), new ActionFortify(), new ActionAttack(), new ActionCalculateAttack(), new ActionMove(), new ActionBuyArmies()];
+    GameGui._instance = this;
+    // Add F9 key listener for action log
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'F9') {
+        if (this.currentGame) {
+          showActionLogDialog(this.currentGame);
+        }
+      }
+    });
   }
 
   /**
@@ -89,6 +115,7 @@ export class GameGui {
    * Updates the action buttons area at the bottom of the sidebar based on current actions and clicked countries.
    */
   updateActionButtons() {
+    if (this.paused) return;
     const actionsDiv = document.getElementById('action-buttons-area');
     if (!actionsDiv) return;
     // Remove only previously generated action buttons, keep persistent ones
@@ -147,14 +174,24 @@ export class GameGui {
         btn.onclick = async () => {
           const amountRange = action.RequiresAmount(clickedCountries, this.currentGame.activePlayer, this.currentGame);
           let result: string | null = null;
+          let amountUsed = 0;
           if (amountRange) {
             const [min, max] = amountRange;
             const selected = await showAmountDialog(min, max, min);
             if (selected === null) return; // Cancelled
+            amountUsed = selected;
             result = await action.Act(clickedCountries, this.currentGame.activePlayer, this.currentGame, selected);
           } else {
             result = await action.Act(clickedCountries, this.currentGame.activePlayer, this.currentGame);
           }
+          // Log the action
+          const usedCountries = clickedCountries.slice(-action.countryCountNeeded);
+          this.currentGame.activePlayer.actionLog.push({
+            actionType: action.constructor.name,
+            countries: usedCountries,
+            amount: amountUsed,
+            result: result ?? null
+          });
           // Decrement action count
           this.currentGame.activePlayer.useAction();
           if (typeof result === 'string' && result !== null) {
@@ -249,6 +286,7 @@ export class GameGui {
    * If dirty, re-render using Renderer and cache.
    */
   getWorldMapCanvas(): HTMLCanvasElement {
+    if (this.paused) throw new Error('Game is paused');
     if (!this.currentGame || !this.currentGame.worldMap) throw new Error('GameGui.getWorldMapCanvas: currentGame or worldMap is missing');
     if (this.mapDirty || !this.worldMapCanvas) {
       let highlightCountries = [];
@@ -284,6 +322,7 @@ export class GameGui {
    * Called whenever a new turn starts (after startTurn is called on the active player).
    */
   async turnStarted() {
+    if (this.paused) return;
     // --- WIN CONDITION CHECK ---
     if (this.currentGame && this.currentGame.activePlayer &&
         this.currentGame.activePlayer.IncomeShare >= Game.INCOME_SHARE_WIN) {
@@ -303,6 +342,7 @@ export class GameGui {
     if (!ai) return;
 
     const doOneAction = async () => {
+      if (this.paused) return;
       if (this.canceled) return;
       const acted = await ai.takeAction();
       this.markMapDirty();
@@ -368,6 +408,7 @@ export class GameGui {
   }
 
   renderMainGui(_container: HTMLElement, game: any) {
+    if (this.paused) return;
     // Defensive check removed: trust rootContainer is always set
     const container = this.rootContainer;
     if (!container) {
@@ -471,6 +512,7 @@ export class GameGui {
         mapCanvas.removeEventListener('mousedown', (mapCanvas as any)._countryClickHandler);
       }
       const countryClickHandler = (e: MouseEvent) => {
+        if (this.paused) return;
         const mapWidth = mapCanvas.width;
         const mapHeight = mapCanvas.height;
         // Use offsetX/Y and scale by client size for accuracy
@@ -735,6 +777,7 @@ export class GameGui {
     endTurnBtn.style.boxShadow = '0 2px 8px rgba(30,32,34,0.13)';
     endTurnBtn.style.fontFamily = "'MedievalSharp', 'Times New Roman', serif";
     endTurnBtn.onclick = () => {
+      if (this.paused) return;
       if (this.currentGame) {
         this.currentGame.nextTurn();
         this.markMapDirty();

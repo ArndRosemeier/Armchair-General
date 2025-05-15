@@ -27,4 +27,6 @@ export abstract class Action {
   RequiresAmount(countries: Country[], activePlayer: Player, currentGame: Game): [number, number] | null {
     return null;
   }
+
+  abstract get countryCountNeeded(): number;
 }

@@ -189,4 +189,8 @@ export class ActionAttack extends Action {
     if (!fromCountry || typeof fromCountry.armies !== 'number' || fromCountry.armies <= 1) return null;
     return [1000, fromCountry.armies - 1000];
   }
+
+  get countryCountNeeded(): number {
+    return 2;
+  }
 }

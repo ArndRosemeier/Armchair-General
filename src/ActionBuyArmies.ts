@@ -57,4 +57,8 @@ export class ActionBuyArmies extends Action {
     if (maxAffordable < 1000) return null;
     return [1000, maxAffordable];
   }
+
+  get countryCountNeeded(): number {
+    return 1;
+  }
 }

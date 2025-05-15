@@ -19,10 +19,18 @@ export interface CountryInfo {
 
 import { AI } from './AI';
 
+export interface PlayerActionLogEntry {
+  actionType: string;
+  countries: Country[];
+  amount: number;
+  result: string | null;
+}
+
 export class Player {
   static readonly ACTIONS_PER_TURN = 5;
   actionsLeft: number = Player.ACTIONS_PER_TURN;
   game?: Game;
+  actionLog: PlayerActionLogEntry[] = [];
 
   /**
    * Resets the available actions to the turn limit.
