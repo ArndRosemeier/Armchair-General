@@ -143,6 +143,7 @@ export class GameGui {
         btn.style.cursor = 'pointer';
         btn.style.boxShadow = '0 2px 8px rgba(30,32,34,0.13)';
         btn.style.marginBottom = '8px';
+        btn.style.fontFamily = "'MedievalSharp', 'Times New Roman', serif";
         btn.onclick = async () => {
           const amountRange = action.RequiresAmount(clickedCountries, this.currentGame.activePlayer, this.currentGame);
           let result: string | null = null;
@@ -412,7 +413,7 @@ export class GameGui {
     // Panel for displaying country info
     const countryInfoPanel = document.createElement('div');
     countryInfoPanel.id = 'country-info-panel';
-    countryInfoPanel.style.background = '#22232a';
+    countryInfoPanel.style.background = '#a67c52'; // lighter brown
     countryInfoPanel.style.border = '1px solid #555';
     countryInfoPanel.style.borderRadius = '8px';
     countryInfoPanel.style.padding = '10px 12px';
@@ -420,6 +421,7 @@ export class GameGui {
     countryInfoPanel.style.color = '#b3e5fc';
     countryInfoPanel.style.fontSize = '1.05rem';
     countryInfoPanel.style.minHeight = '100px';
+    countryInfoPanel.style.fontFamily = "'MedievalSharp', 'Times New Roman', serif";
     countryInfoPanel.innerHTML = '<b>Country Info</b><br><span style="color:#888">Click a country to view details.</span>';
 
 
@@ -578,17 +580,37 @@ export class GameGui {
     // Right: Sidebar
     const sidebar = document.createElement('div');
 
+    // Add New Game button at the very top
+    const newGameBtn = document.createElement('button');
+    newGameBtn.textContent = 'New Game';
+    newGameBtn.classList.add('persistent-action-btn');
+    newGameBtn.style.padding = '12px 0';
+    newGameBtn.style.fontSize = '1.1rem';
+    newGameBtn.style.background = 'linear-gradient(90deg,#00c3ff 0%,#ffff1c 100%)';
+    newGameBtn.style.color = '#222';
+    newGameBtn.style.border = 'none';
+    newGameBtn.style.borderRadius = '8px';
+    newGameBtn.style.cursor = 'pointer';
+    newGameBtn.style.boxShadow = '0 2px 8px rgba(30,32,34,0.13)';
+    newGameBtn.style.marginBottom = '24px';
+    newGameBtn.style.fontFamily = "'MedievalSharp', 'Times New Roman', serif";
+    newGameBtn.onclick = () => {
+      this.startNewGame();
+    };
+    sidebar.appendChild(newGameBtn);
+
     // Add country info panel below
     sidebar.appendChild(countryInfoPanel);
 
 
     sidebar.style.flex = '1';
-    sidebar.style.background = 'rgba(30,32,34,0.98)';
+    sidebar.style.background = '#3b2412'; // deep brown
     sidebar.style.display = 'flex';
     sidebar.style.flexDirection = 'column';
     sidebar.style.padding = '32px 24px';
     sidebar.style.color = '#fff';
     sidebar.style.minWidth = '320px';
+    sidebar.style.fontFamily = "'MedievalSharp', 'Times New Roman', serif";
 
     // Game Info
     const gameInfo = document.createElement('div');
@@ -700,23 +722,6 @@ export class GameGui {
     actionsDiv.style.gap = '12px';
     actionsDiv.style.marginTop = 'auto';
 
-    const newGameBtn = document.createElement('button');
-    newGameBtn.textContent = 'New Game';
-    newGameBtn.classList.add('persistent-action-btn');
-    newGameBtn.style.padding = '12px 0';
-    newGameBtn.style.fontSize = '1.1rem';
-    newGameBtn.style.background = 'linear-gradient(90deg,#00c3ff 0%,#ffff1c 100%)';
-    newGameBtn.style.color = '#222';
-    newGameBtn.style.border = 'none';
-    newGameBtn.style.borderRadius = '8px';
-    newGameBtn.style.cursor = 'pointer';
-    newGameBtn.style.boxShadow = '0 2px 8px rgba(30,32,34,0.13)';
-    newGameBtn.style.marginBottom = '8px';
-    newGameBtn.onclick = () => {
-      this.startNewGame();
-    };
-    actionsDiv.appendChild(newGameBtn);
-
     const endTurnBtn = document.createElement('button');
     endTurnBtn.textContent = 'End Turn';
     endTurnBtn.classList.add('persistent-action-btn');
@@ -728,6 +733,7 @@ export class GameGui {
     endTurnBtn.style.borderRadius = '8px';
     endTurnBtn.style.cursor = 'pointer';
     endTurnBtn.style.boxShadow = '0 2px 8px rgba(30,32,34,0.13)';
+    endTurnBtn.style.fontFamily = "'MedievalSharp', 'Times New Roman', serif";
     endTurnBtn.onclick = () => {
       if (this.currentGame) {
         this.currentGame.nextTurn();

@@ -44,6 +44,7 @@ export function showNewGameDialog(container: HTMLElement): Promise<NewGameDialog
     dialog.style.justifyContent = 'flex-start';
     dialog.style.padding = '0';
     dialog.style.overflow = 'hidden';
+    dialog.style.fontFamily = "'MedievalSharp', 'Times New Roman', serif";
 
     // Header
     const header = document.createElement('div');
@@ -55,6 +56,7 @@ export function showNewGameDialog(container: HTMLElement): Promise<NewGameDialog
     header.style.fontWeight = 'bold';
     header.style.letterSpacing = '1px';
     header.style.boxShadow = '0 2px 8px rgba(30,32,34,0.13)';
+    header.style.fontFamily = "'MedievalSharp', 'Times New Roman', serif";
     header.textContent = 'New Game';
     dialog.appendChild(header);
 
@@ -78,6 +80,7 @@ export function showNewGameDialog(container: HTMLElement): Promise<NewGameDialog
     leftCol.style.background = 'linear-gradient(135deg, #232526 0%, #232526 100%)';
     leftCol.style.padding = '36px 16px 24px 32px';
     leftCol.style.borderRight = '2px solid #333';
+    leftCol.style.fontFamily = "'MedievalSharp', 'Times New Roman', serif";
     main.appendChild(leftCol);
 
     // Map preview area (3:2 ratio, e.g. 300x200)
@@ -189,6 +192,7 @@ export function showNewGameDialog(container: HTMLElement): Promise<NewGameDialog
     recreateBtn.style.cursor = 'pointer';
     recreateBtn.style.marginTop = '4px';
     recreateBtn.style.boxShadow = '0 2px 8px rgba(30,32,34,0.13)';
+    recreateBtn.style.fontFamily = "'MedievalSharp', 'Times New Roman', serif";
     recreateBtn.onmouseenter = () => recreateBtn.style.background = 'linear-gradient(90deg,#185a9d 0%,#43cea2 100%)';
     recreateBtn.onmouseleave = () => recreateBtn.style.background = 'linear-gradient(90deg,#43cea2 0%,#185a9d 100%)';
     leftCol.appendChild(recreateBtn);
@@ -201,6 +205,7 @@ export function showNewGameDialog(container: HTMLElement): Promise<NewGameDialog
     rightCol.style.alignItems = 'stretch';
     rightCol.style.justifyContent = 'flex-start';
     rightCol.style.padding = '36px 32px 24px 24px';
+    rightCol.style.fontFamily = "'MedievalSharp', 'Times New Roman', serif";
     main.appendChild(rightCol);
 
     // Player list state
@@ -214,6 +219,7 @@ export function showNewGameDialog(container: HTMLElement): Promise<NewGameDialog
     playerListLabel.style.fontSize = '1.1rem';
     playerListLabel.style.color = '#fff';
     playerListLabel.style.marginBottom = '8px';
+    playerListLabel.style.fontFamily = "'MedievalSharp', 'Times New Roman', serif";
     rightCol.appendChild(playerListLabel);
 
     // Player list (scrollable)
@@ -227,6 +233,7 @@ export function showNewGameDialog(container: HTMLElement): Promise<NewGameDialog
     playerList.style.maxHeight = '160px';
     playerList.style.overflowY = 'auto';
     playerList.style.boxShadow = '0 2px 8px rgba(30,32,34,0.10)';
+    playerList.style.fontFamily = "'MedievalSharp', 'Times New Roman', serif";
     rightCol.appendChild(playerList);
 
     function updatePlayerList() {
@@ -241,6 +248,7 @@ export function showNewGameDialog(container: HTMLElement): Promise<NewGameDialog
         li.style.borderRadius = '6px';
         li.style.padding = '6px 10px';
         li.style.boxShadow = '0 1px 4px rgba(30,32,34,0.09)';
+        li.style.fontFamily = "'MedievalSharp', 'Times New Roman', serif";
         // Player name and AI badge
         // Inline editable player name
         const nameSpan = document.createElement('span');
@@ -248,6 +256,7 @@ export function showNewGameDialog(container: HTMLElement): Promise<NewGameDialog
         nameSpan.style.flex = '1';
         nameSpan.style.cursor = 'pointer';
         nameSpan.style.fontWeight = 'bold';
+        nameSpan.style.fontFamily = "'MedievalSharp', 'Times New Roman', serif";
 
     nameSpan.onclick = () => {
       const input = document.createElement('input');
@@ -314,6 +323,7 @@ export function showNewGameDialog(container: HTMLElement): Promise<NewGameDialog
           aiBadge.style.borderRadius = '3px';
           aiBadge.style.padding = '2px 7px';
           aiBadge.style.marginLeft = '8px';
+          aiBadge.style.fontFamily = "'MedievalSharp', 'Times New Roman', serif";
           li.appendChild(aiBadge);
         }
         // Remove button
@@ -327,6 +337,7 @@ export function showNewGameDialog(container: HTMLElement): Promise<NewGameDialog
         removeBtn.style.fontWeight = 'bold';
         removeBtn.style.cursor = 'pointer';
         removeBtn.style.padding = '2px 8px';
+        removeBtn.style.fontFamily = "'MedievalSharp', 'Times New Roman', serif";
         removeBtn.onmouseenter = () => removeBtn.style.background = 'linear-gradient(90deg,#ffb74d 0%,#e57373 100%)';
         removeBtn.onmouseleave = () => removeBtn.style.background = 'linear-gradient(90deg,#e57373 0%,#ffb74d 100%)';
         removeBtn.onclick = () => {
@@ -359,6 +370,7 @@ export function showNewGameDialog(container: HTMLElement): Promise<NewGameDialog
     addHumanBtn.style.fontSize = '1rem';
     addHumanBtn.style.cursor = 'pointer';
     addHumanBtn.style.boxShadow = '0 2px 8px rgba(30,32,34,0.13)';
+    addHumanBtn.style.fontFamily = "'MedievalSharp', 'Times New Roman', serif";
     addHumanBtn.onmouseenter = () => addHumanBtn.style.background = 'linear-gradient(90deg,#185a9d 0%,#43cea2 100%)';
     addHumanBtn.onmouseleave = () => addHumanBtn.style.background = 'linear-gradient(90deg,#43cea2 0%,#185a9d 100%)';
     addHumanBtn.onclick = () => {
@@ -381,6 +393,7 @@ export function showNewGameDialog(container: HTMLElement): Promise<NewGameDialog
     addAIBtn.style.fontSize = '1rem';
     addAIBtn.style.cursor = 'pointer';
     addAIBtn.style.boxShadow = '0 2px 8px rgba(30,32,34,0.13)';
+    addAIBtn.style.fontFamily = "'MedievalSharp', 'Times New Roman', serif";
     addAIBtn.onmouseenter = () => addAIBtn.style.background = 'linear-gradient(90deg,#ff5e62 0%,#ff9966 100%)';
     addAIBtn.onmouseleave = () => addAIBtn.style.background = 'linear-gradient(90deg,#ff9966 0%,#ff5e62 100%)';
     addAIBtn.onclick = () => {
@@ -410,6 +423,7 @@ export function showNewGameDialog(container: HTMLElement): Promise<NewGameDialog
     startBtn.style.fontSize = '1.1rem';
     startBtn.style.cursor = 'pointer';
     startBtn.style.boxShadow = '0 2px 8px rgba(30,32,34,0.13)';
+    startBtn.style.fontFamily = "'MedievalSharp', 'Times New Roman', serif";
     startBtn.disabled = true;
     startBtn.onmouseenter = () => startBtn.style.background = 'linear-gradient(90deg,#185a9d 0%,#43cea2 100%)';
     startBtn.onmouseleave = () => startBtn.style.background = 'linear-gradient(90deg,#43cea2 0%,#185a9d 100%)';
@@ -439,6 +453,7 @@ export function showNewGameDialog(container: HTMLElement): Promise<NewGameDialog
     cancelBtn.style.fontSize = '1.1rem';
     cancelBtn.style.cursor = 'pointer';
     cancelBtn.style.boxShadow = '0 2px 8px rgba(30,32,34,0.13)';
+    cancelBtn.style.fontFamily = "'MedievalSharp', 'Times New Roman', serif";
     cancelBtn.onmouseenter = () => cancelBtn.style.background = 'linear-gradient(90deg,#ffb74d 0%,#e57373 100%)';
     cancelBtn.onmouseleave = () => cancelBtn.style.background = 'linear-gradient(90deg,#e57373 0%,#ffb74d 100%)';
     cancelBtn.onclick = () => {
