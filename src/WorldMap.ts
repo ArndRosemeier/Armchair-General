@@ -264,3 +264,21 @@ export class WorldMap {
   }
 }
 
+export function regenerateMapFromCountries(countries: Country[]): WorldMap {
+  if (!countries.length) throw new Error("No countries provided");
+  // Find max x/y to determine map size
+  let maxX = 0, maxY = 0;
+  for (const c of countries) {
+    for (const [x, y] of c.coordinates) {
+      if (x > maxX) maxX = x;
+      if (y > maxY) maxY = y;
+    }
+  }
+  const width = maxX + 1;
+  const height = maxY + 1;
+  const worldMap = new WorldMap(width, height, countries);
+  worldMap.regenerateMapFromCountries(countries);
+  worldMap.createContinents();
+  return worldMap;
+}
+

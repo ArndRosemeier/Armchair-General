@@ -12,6 +12,7 @@ import { showWinDialog } from './WinDialog';
 import { FishOverlay } from './FishOverlay';
 import { OCEAN } from './WorldMap';
 import { showActionLogDialog } from './ActionLogDialog';
+import { Serializer } from './Serializer';
 
 export class GameGui {
   private state: string;
@@ -648,6 +649,89 @@ export class GameGui {
       this.startNewGame();
     };
     sidebar.appendChild(newGameBtn);
+
+    // --- Save Game button ---
+    const saveBtn = document.createElement('button');
+    saveBtn.textContent = 'Save Game';
+    saveBtn.style.padding = '12px 0';
+    saveBtn.style.fontSize = '1.1rem';
+    saveBtn.style.background = 'linear-gradient(90deg,#43cea2 0%,#ffd700 100%)';
+    saveBtn.style.color = '#222';
+    saveBtn.style.border = 'none';
+    saveBtn.style.borderRadius = '8px';
+    saveBtn.style.cursor = 'pointer';
+    saveBtn.style.boxShadow = '0 2px 8px rgba(30,32,34,0.13)';
+    saveBtn.style.marginBottom = '12px';
+    saveBtn.style.fontFamily = "'MedievalSharp', 'Times New Roman', serif";
+    saveBtn.onclick = () => {
+      try {
+        if (!this.currentGame) throw new Error('No game to save');
+        const json = Serializer.serialize(this.currentGame);
+        const blob = new Blob([json], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'armchair-general-save.json';
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => {
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        }, 100);
+      } catch (err) {
+        alert('Save failed: ' + (err && (err as any).message ? (err as any).message : err));
+        throw err;
+      }
+    };
+    sidebar.appendChild(saveBtn);
+
+    // --- Load Game button ---
+    const loadBtn = document.createElement('button');
+    loadBtn.textContent = 'Load Game';
+    loadBtn.style.padding = '12px 0';
+    loadBtn.style.fontSize = '1.1rem';
+    loadBtn.style.background = 'linear-gradient(90deg,#ff5e62 0%,#00c3ff 100%)';
+    loadBtn.style.color = '#222';
+    loadBtn.style.border = 'none';
+    loadBtn.style.borderRadius = '8px';
+    loadBtn.style.cursor = 'pointer';
+    loadBtn.style.boxShadow = '0 2px 8px rgba(30,32,34,0.13)';
+    loadBtn.style.marginBottom = '24px';
+    loadBtn.style.fontFamily = "'MedievalSharp', 'Times New Roman', serif";
+    loadBtn.onclick = () => {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.json,application/json';
+      input.onchange = (e: any) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          try {
+            const json = reader.result as string;
+            const game = Serializer.deserialize(json);
+            game.gui = this;
+            for (const player of game.players) {
+              player.game = game;
+              if (player.isAI && player.AI) {
+                player.AI.game = game;
+                player.AI.player = player;
+              }
+            }
+            this.currentGame = game;
+            this.markMapDirty();
+            this.renderMainGui(this.rootContainer as HTMLElement, this.currentGame);
+            this.turnStarted();
+          } catch (err) {
+            alert('Load failed: ' + (err && (err as any).message ? (err as any).message : err));
+            throw err;
+          }
+        };
+        reader.readAsText(file);
+      };
+      input.click();
+    };
+    sidebar.appendChild(loadBtn);
 
     // Add country info panel below
     sidebar.appendChild(countryInfoPanel);
