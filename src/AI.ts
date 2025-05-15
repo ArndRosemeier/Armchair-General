@@ -72,6 +72,10 @@ export class AI {
     for (const { country, distance } of nonOwned) {
       const knowledge = this.player.knowledge.find(k => k.country === country);
       if (!country.owner && knowledge) continue;
+      if (country.owner && country.owner !== this.player) {
+        // Only create spy opportunity if no knowledge or knowledge is stale (>3 turns)
+        if (knowledge && (this.game.gameTurn - knowledge.gameTurn) <= 3) continue;
+      }
       let score = 3000 - Math.sqrt(distance);
       score *= knowledgeBoost;
       if (score > 0) {
