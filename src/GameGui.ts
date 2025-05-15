@@ -215,7 +215,7 @@ export class GameGui {
           // Log the action
           const usedCountries = clickedCountries.slice(-action.countryCountNeeded);
           this.currentGame.activePlayer.actionLog.push({
-            actionType: action.constructor.name,
+            actionType: action.Type(),
             countries: usedCountries,
             amount: amountUsed,
             result: result ?? null

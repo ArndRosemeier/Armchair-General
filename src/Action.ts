@@ -29,4 +29,9 @@ export abstract class Action {
   }
 
   abstract get countryCountNeeded(): number;
+
+  /**
+   * Returns the type of the action as a string.
+   */
+  abstract Type(): string;
 }

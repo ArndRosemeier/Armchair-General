@@ -78,4 +78,15 @@ export class ActionCalculateAttack extends Action {
     if (!fromCountry || typeof fromCountry.armies !== 'number' || fromCountry.armies <= 1) return null;
     return [1000, fromCountry.armies - 1000];
   }
+
+  /**
+   * Returns the type of the action as a string.
+   */
+  Type(): string {
+    return 'CalculateAttack';
+  }
+
+  get countryCountNeeded(): number {
+    return 2;
+  }
 }

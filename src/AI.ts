@@ -162,7 +162,7 @@ export class AI {
     // Log the action
     const usedCountries = opportunity.countries.slice(-opportunity.action.countryCountNeeded);
     this.player.actionLog.push({
-      actionType: opportunity.action.constructor.name,
+      actionType: opportunity.action.Type(),
       countries: usedCountries,
       amount: opportunity.amount,
       result: result ?? null

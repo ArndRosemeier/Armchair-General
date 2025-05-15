@@ -193,4 +193,11 @@ export class ActionAttack extends Action {
   get countryCountNeeded(): number {
     return 2;
   }
+
+  /**
+   * Returns the type of the action as a string.
+   */
+  Type(): string {
+    return 'Attack';
+  }
 }
