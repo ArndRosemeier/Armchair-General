@@ -109,7 +109,6 @@ export class GameGui {
         const infoPanel = document.getElementById('country-info-panel');
         if (infoPanel) {
           infoPanel.innerHTML = `
-            <b>Country Info</b><br>
             <div><b>Name:</b> ${info.name}</div>
             <div><b>Owner:</b> ${info.owner ? info.owner.name : 'None'}</div>
             <div><b>Income:</b> ${info.income !== undefined ? info.income : '?'}</div>
@@ -133,7 +132,6 @@ export class GameGui {
           const infoPanel = document.getElementById('country-info-panel');
           if (infoPanel) {
             infoPanel.innerHTML = `
-              <b>Country Info</b><br>
               <div><b>Name:</b> ${info.name}</div>
               <div><b>Owner:</b> ${info.owner ? info.owner.name : 'None'}</div>
               <div><b>Income:</b> ${info.income !== undefined ? info.income : '?'}</div>
@@ -231,8 +229,8 @@ export class GameGui {
           // Decrement action count
           this.currentGame.activePlayer.useAction();
           if (typeof result === 'string' && result !== null) {
-            this.showModalMessage(result);
             this.afterAction();
+            this.showActionResult(result);
           } else {
             this.afterAction();
           }
@@ -255,59 +253,19 @@ export class GameGui {
   }
 
   /**
-   * Shows a modal messagebox with the given message.
+   * Shows a message in the sidebar action result panel.
    */
-  showModalMessage(message: string) {
-    let modal = document.getElementById('gamegui-modal-messagebox');
-    if (!modal) {
-      modal = document.createElement('div');
-      modal.id = 'gamegui-modal-messagebox';
-      modal.style.position = 'fixed';
-      modal.style.left = '0';
-      modal.style.top = '0';
-      modal.style.width = '100vw';
-      modal.style.height = '100vh';
-      modal.style.background = 'rgba(0,0,0,0.5)';
-      modal.style.display = 'flex';
-      modal.style.alignItems = 'center';
-      modal.style.justifyContent = 'center';
-      modal.style.zIndex = '9999';
-      const box = document.createElement('div');
-      box.style.background = '#fff';
-      box.style.padding = '32px 40px';
-      box.style.borderRadius = '12px';
-      box.style.boxShadow = '0 2px 16px rgba(0,0,0,0.2)';
-      box.style.maxWidth = '90vw';
-      box.style.maxHeight = '80vh';
-      box.style.display = 'flex';
-      box.style.flexDirection = 'column';
-      box.style.alignItems = 'center';
-      box.style.gap = '24px';
-      const msgElem = document.createElement('div');
-      msgElem.id = 'gamegui-modal-messagebox-text';
-      msgElem.style.fontSize = '1.2rem';
-      msgElem.style.color = '#222';
-      box.appendChild(msgElem);
-      const closeBtn = document.createElement('button');
-      closeBtn.textContent = 'OK';
-      closeBtn.style.marginTop = '12px';
-      closeBtn.style.padding = '8px 24px';
-      closeBtn.style.fontSize = '1.1rem';
-      closeBtn.style.border = 'none';
-      closeBtn.style.borderRadius = '6px';
-      closeBtn.style.background = 'linear-gradient(90deg,#ff9966 0%,#ff5e62 100%)';
-      closeBtn.style.color = '#fff';
-      closeBtn.style.cursor = 'pointer';
-      closeBtn.onclick = () => {
-        if (modal && modal.parentNode) modal.parentNode.removeChild(modal);
-      };
-      box.appendChild(closeBtn);
-      modal.appendChild(box);
-      document.body.appendChild(modal);
+  showActionResult(message: string) {
+    const panel = document.getElementById('action-result-panel');
+    if (panel) {
+      panel.innerHTML = `<span style="color:#fff">${message}</span>`;
     }
-    const msgElem = document.getElementById('gamegui-modal-messagebox-text');
-    if (msgElem) msgElem.textContent = message;
-    modal.style.display = 'flex';
+  }
+  clearActionResult() {
+    const panel = document.getElementById('action-result-panel');
+    if (panel) {
+      panel.innerHTML = '<span style="color:#888">No recent action.</span>';
+    }
   }
 
   /**
@@ -359,6 +317,7 @@ export class GameGui {
    */
   async turnStarted() {
     if (this.paused) return;
+    this.clearActionResult();
     // --- WIN CONDITION CHECK ---
     if (this.currentGame && this.currentGame.activePlayer &&
         this.currentGame.activePlayer.IncomeShare >= Game.INCOME_SHARE_WIN) {
@@ -512,7 +471,7 @@ export class GameGui {
     countryInfoPanel.style.fontSize = '1.05rem';
     countryInfoPanel.style.minHeight = '100px';
     countryInfoPanel.style.fontFamily = "'MedievalSharp', 'Times New Roman', serif";
-    countryInfoPanel.innerHTML = '<b>Country Info</b><br><span style="color:#888">Click a country to view details.</span>';
+    countryInfoPanel.innerHTML = '<span style="color:#888">Click a country to view details.</span>';
 
 
     if (mapCanvas) {
@@ -621,7 +580,6 @@ export class GameGui {
             if (infoPanel && game && game.activePlayer && typeof game.gameTurn === 'number') {
               const info = game.activePlayer.getCountryInfo(clickedCountry, game.gameTurn);
               infoPanel.innerHTML = `
-                <b>Country Info</b><br>
                 <div><b>Name:</b> ${info.name}</div>
                 <div><b>Owner:</b> ${info.owner ? info.owner.name : 'None'}</div>
                 <div><b>Income:</b> ${info.income !== undefined ? info.income : '?'}</div>
@@ -805,6 +763,20 @@ export class GameGui {
       sidebar.appendChild(playerList);
     }
 
+    // Action result panel
+    const actionResultPanel = document.createElement('div');
+    actionResultPanel.id = 'action-result-panel';
+    actionResultPanel.style.background = '#a67c52';
+    actionResultPanel.style.border = '1px solid #555';
+    actionResultPanel.style.borderRadius = '8px';
+    actionResultPanel.style.padding = '10px 12px';
+    actionResultPanel.style.marginBottom = '18px';
+    actionResultPanel.style.color = '#fff';
+    actionResultPanel.style.fontSize = '1.05rem';
+    actionResultPanel.style.minHeight = '60px';
+    actionResultPanel.style.fontFamily = "'MedievalSharp', 'Times New Roman', serif";
+    actionResultPanel.innerHTML = '<span style="color:#888">No recent action.</span>';
+    sidebar.appendChild(actionResultPanel);
 
     // Action buttons
     const actionsDiv = document.createElement('div');
