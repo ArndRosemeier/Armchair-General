@@ -84,6 +84,14 @@ export class GameGui {
           showActionLogDialog(this.currentGame);
         }
       }
+      if (e.key === 'F8') {
+        // Show win dialog with current player as winner
+        // @ts-ignore
+        import('./WinDialog').then(mod => {
+          const playerName = this.currentGame?.activePlayer?.name || 'Player';
+          mod.showWinDialog(playerName, 100);
+        });
+      }
     });
   }
 

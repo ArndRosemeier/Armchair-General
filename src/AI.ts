@@ -167,9 +167,6 @@ export class AI {
       amount: opportunity.amount,
       result: result ?? null
     });
-    if (fromActionPlan && result) {
-      console.log('Action result (from actionPlan):', result);
-    }
     // If the executed opportunity has a followUp and the actionPlan is empty, push it
     if (opportunity.followUp && this.actionPlan.length === 0) {
       this.actionPlan.push(opportunity.followUp);
