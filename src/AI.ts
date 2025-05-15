@@ -45,16 +45,35 @@ export class AI {
     const action = new ActionSpy();
     const opportunities: Opportunity[] = [];
     const nonOwned = this.getNonOwnedCountriesSortedByDistance();
+    // Calculate knowledge goal for opponent-owned countries
+    const worldMap = this.game.worldMap;
+    const allCountries = worldMap.getCountries();
+    const opponentCountries = allCountries.filter(c => c.owner && c.owner !== this.player);
+    const n = Math.min(5, this.player.ownedCountries.length);
+    let freshKnowledgeCount = 0;
+    for (const country of opponentCountries) {
+      const knowledge = this.player.knowledge.find(k => k.country === country);
+      if (country.owner && country.owner !== this.player) {
+        // For opponent-owned countries, knowledge is fresh if <= 3 turns old
+        if (knowledge && (this.game.gameTurn - knowledge.gameTurn) <= 3) {
+          freshKnowledgeCount++;
+        }
+      } else if (!country.owner) {
+        // For unowned countries, knowledge never gets stale
+        if (knowledge) {
+          freshKnowledgeCount++;
+        }
+      }
+    }
+    let knowledgeBoost = 1;
+    if (freshKnowledgeCount < n) {
+      knowledgeBoost = 10;
+    }
     for (const { country, distance } of nonOwned) {
       const knowledge = this.player.knowledge.find(k => k.country === country);
-      if (!country.owner) {
-        // Dismiss if unowned and already in knowledge
-        if (knowledge) continue;
-      } else {
-        // Dismiss if opponent owned and knowledge is not stale
-        if (knowledge && (this.game.gameTurn - knowledge.gameTurn) <= 3) continue;
-      }
-      const score = 3000 - Math.sqrt(distance);
+      if (!country.owner && knowledge) continue;
+      let score = 3000 - Math.sqrt(distance);
+      score *= knowledgeBoost;
       if (score > 0) {
         const spyCost = country.fortified ? Game.spyFortifiedCost : Game.spyCost;
         if (this.player.money >= spyCost) {
@@ -136,6 +155,14 @@ export class AI {
     }
     if (!opportunity) return false;
     const result = await opportunity.action.Act(opportunity.countries, this.player, this.game, opportunity.amount);
+    // Log the action
+    const usedCountries = opportunity.countries.slice(-opportunity.action.countryCountNeeded);
+    this.player.actionLog.push({
+      actionType: opportunity.action.constructor.name,
+      countries: usedCountries,
+      amount: opportunity.amount,
+      result: result ?? null
+    });
     if (fromActionPlan && result) {
       console.log('Action result (from actionPlan):', result);
     }
@@ -211,7 +238,7 @@ export class AI {
       );
       let score = 0;
       if (attackChance >= 0.7) {
-        score = attackChance * attackChance * attackChance  * this.countryScore(country) * 100;
+        score = attackChance * attackChance * this.countryScore(country) * 1000;
       }
       if (score > bestScore) {
         bestScore = score;
@@ -314,8 +341,7 @@ export class AI {
     const action = new ActionBuyArmies();
     const money = this.player.money;
     const armyCost = Game.armyCost;
-    const reserve = 2000000;
-    const availableMoney = Math.max(0, money - reserve);
+    const availableMoney = Math.max(0, money - MoneyReserve);
     if (this.player.ownedCountries.length === 0 || availableMoney < armyCost) return opportunities;
     const avgArmy = Math.floor(this.player.totalArmies() / this.player.ownedCountries.length);
     // 1. Bring weakest country up to average if possible
@@ -369,12 +395,27 @@ export class AI {
         opportunities.push(new Opportunity([bestTarget], roundedAffordable, action, bestScore * 1000, followUp));
       }
     }
+
+    // 3. Spend all available money (except reserve) to reinforce the most threatened owned country
+    if (availableMoney > 0 && this.player.ownedCountries.length > 0) {
+      const mostThreatened = this.findMostThreatenedOwnedCountry();
+      if (!mostThreatened) {
+        throw new Error("findMostThreatenedOwnedCountry() returned null, which should not happen if there are owned countries.");
+      }
+      const maxAffordable = Math.floor(availableMoney / armyCost);
+      const roundedMaxAffordable = Math.floor(maxAffordable / 1000) * 1000;
+      if (roundedMaxAffordable > 0) {
+        const score = availableMoney / 1000;
+        opportunities.push(new Opportunity([mostThreatened], roundedMaxAffordable, action, score));
+      }
+    }
     return opportunities;
   }
 
   /**
-   * Finds the best opportunity among all possible actions.
-   * Logs all opportunities to the console and returns the one with the highest score.
+   * Finds the best opportunity among all possible actions using softmax selection.
+   * Higher score opportunities are more likely, but not guaranteed, to be chosen.
+   * Throws an error if no opportunities exist.
    */
   findBestOpportunity(): Opportunity | null {
     // Prepare actions
@@ -391,9 +432,26 @@ export class AI {
     allOpportunities.push(...this.FindFortifyOpportunities(fortifyAction));
     allOpportunities.push(...this.FindBuyOpportunities());
 
-    // Return the best opportunity
-    if (allOpportunities.length === 0) return null;
-    return allOpportunities.reduce((best, curr) => curr.score > best.score ? curr : best, allOpportunities[0]);
+    if (allOpportunities.length === 0) {
+      return null
+    }
+
+    // Softmax selection
+    const temperature = 0.5; // Lower = greedier, higher = more random
+    const maxScore = Math.max(...allOpportunities.map(o => o.score));
+    // Avoid overflow/underflow by subtracting maxScore
+    const expScores = allOpportunities.map(o => Math.exp((o.score - maxScore) / temperature));
+    const sumExp = expScores.reduce((a, b) => a + b, 0);
+    const probs = expScores.map(e => e / sumExp);
+    // Sample one opportunity according to softmax probabilities
+    const r = Math.random();
+    let acc = 0;
+    for (let i = 0; i < allOpportunities.length; ++i) {
+      acc += probs[i];
+      if (r < acc) return allOpportunities[i];
+    }
+    // Fallback (should not happen)
+    throw new Error("Softmax selection failed to pick an opportunity.");
   }
 
   /**
@@ -583,5 +641,37 @@ export class AI {
     const chance = ActionAttack.AttackChance(committedArmies, estimatedDefense, dist, to.fortified, this.game);
     if (chance < 0.7) return false;
     return true;
+  }
+
+  /**
+   * Finds the most threatened owned country.
+   * For each owned country, sums 1/distance to every country owned by another player (ignoring unreachable countries).
+   * Returns the owned country with the highest score.
+   */
+  findMostThreatenedOwnedCountry(): Country | null {
+    if (!this.player.ownedCountries || this.player.ownedCountries.length === 0) {
+      throw new Error("AI has no owned countries to evaluate for threat.");
+    }
+    const worldMap = this.game.worldMap;
+    const allCountries = worldMap.getCountries();
+    let bestCountry: Country | null = null;
+    let bestScore = -Infinity;
+    for (const owned of this.player.ownedCountries) {
+      let score = 0;
+      for (const other of allCountries) {
+        if (!other.owner || other.owner === this.player) continue;
+        const dist = worldMap.distance(owned, other);
+        if (dist === null || dist === 0) continue;
+        score += 1 / dist;
+      }
+      if (score > bestScore) {
+        bestScore = score;
+        bestCountry = owned;
+      }
+    }
+    if (!bestCountry) {
+      throw new Error("No threatened country found. This should not happen if there are enemy countries.");
+    }
+    return bestCountry;
   }
 }
