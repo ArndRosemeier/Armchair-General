@@ -103,7 +103,7 @@ export class Renderer {
 
     // Draw country names at their centers
     ctx.save();
-    ctx.font = 'bold 10px Verdana, Geneva, sans-serif';
+    ctx.font = 'bold 10px MedievalSharp, Verdana, serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     for (const country of countries) {
@@ -134,13 +134,13 @@ export class Renderer {
       if (showArmy) {
         const armies = country.armies || 0;
         const armiesText = `${Math.round(armies / 1000)}k`;
-        ctx.font = 'bold 9px Verdana, Geneva, sans-serif';
+        ctx.font = 'bold 9px MedievalSharp, Verdana, serif';
         ctx.lineWidth = 2;
         ctx.strokeStyle = 'black';
         ctx.strokeText(armiesText, cx, cy + 13);
         ctx.fillStyle = '#FFD700'; // gold/yellow for armies
         ctx.fillText(armiesText, cx, cy + 13);
-        ctx.font = 'bold 10px Verdana, Geneva, sans-serif'; // restore font
+        ctx.font = 'bold 10px MedievalSharp, Verdana, serif'; // restore font
       }
     }
     ctx.restore();
