@@ -30,12 +30,40 @@ export class GameGui {
   // Array of actions
   public actions: Action[];
 
+  private fishOverlay: any = null;
+
   // --- PAUSE/RESUME API ---
   public pauseGame() {
     this.paused = true;
+    // Try to find FishOverlay if not already referenced
+    if (!this.fishOverlay) {
+      const mapArea = document.querySelector('div[style*="flex: 3"]');
+      if (mapArea && (mapArea as any)._fishOverlay) {
+        this.fishOverlay = (mapArea as any)._fishOverlay;
+      }
+    }
+    if (this.fishOverlay && typeof this.fishOverlay.stop === 'function') {
+      console.log('Pausing FishOverlay', this.fishOverlay);
+      this.fishOverlay.stop();
+    } else {
+      console.log('No FishOverlay to pause');
+    }
   }
   public resumeGame() {
     this.paused = false;
+    // Try to find FishOverlay if not already referenced
+    if (!this.fishOverlay) {
+      const mapArea = document.querySelector('div[style*="flex: 3"]');
+      if (mapArea && (mapArea as any)._fishOverlay) {
+        this.fishOverlay = (mapArea as any)._fishOverlay;
+      }
+    }
+    if (this.fishOverlay && typeof this.fishOverlay.resume === 'function') {
+      console.log('Resuming FishOverlay', this.fishOverlay);
+      this.fishOverlay.resume();
+    } else {
+      console.log('No FishOverlay to resume');
+    }
   }
   public isPaused() {
     return this.paused;
@@ -409,10 +437,23 @@ export class GameGui {
 
   renderMainGui(_container: HTMLElement, game: any) {
     if (this.paused) return;
-    // Defensive check removed: trust rootContainer is always set
+    // --- CLEANUP PREVIOUS FISH OVERLAY (if any) ---
     const container = this.rootContainer;
     if (!container) {
       throw new Error("rootContainer is not set (null) in renderMainGui");
+    }
+    // Find previous mapArea and clean up FishOverlay
+    const prevMapArea = container.querySelector('div[style*="flex: 3"]');
+    if (prevMapArea && (prevMapArea as any)._fishOverlay) {
+      const fish = (prevMapArea as any)._fishOverlay;
+      if (typeof fish.stop === 'function') {
+        fish.stop();
+      }
+      // Remove overlay canvas from DOM
+      if (fish.overlay && fish.overlay.parentNode) {
+        fish.overlay.parentNode.removeChild(fish.overlay);
+      }
+      (prevMapArea as any)._fishOverlay = null;
     }
     container.innerHTML = '';
     // Main wrapper
@@ -507,6 +548,7 @@ export class GameGui {
         };
         (mapArea as any)._fishOverlay = new FishOverlay(mapArea, width, height, getOcean);
       }
+      this.fishOverlay = (mapArea as any)._fishOverlay;
       // --- Fix: Ensure only one click handler is attached ---
       if ((mapCanvas as any)._countryClickHandler) {
         mapCanvas.removeEventListener('mousedown', (mapCanvas as any)._countryClickHandler);
