@@ -11,6 +11,8 @@ export class FishOverlay {
   private lastSpawn: number = 0;
   private nextSpawn: number = 0;
   private getOceanPredicate: (x: number, y: number) => boolean;
+  private animationFrameId: number | null = null;
+  private timeoutId: number | null = null;
 
   constructor(mapArea: HTMLElement, width: number, height: number, getOceanPredicate: (x: number, y: number) => boolean) {
     this.width = width;
@@ -59,7 +61,25 @@ export class FishOverlay {
   private start() {
     if (this.running) return;
     this.running = true;
-    requestAnimationFrame(this.loop);
+    this.animationFrameId = requestAnimationFrame(this.loop);
+  }
+
+  public stop() {
+    this.running = false;
+    if (this.animationFrameId !== null) {
+      cancelAnimationFrame(this.animationFrameId);
+      this.animationFrameId = null;
+    }
+    if (this.timeoutId !== null) {
+      clearTimeout(this.timeoutId);
+      this.timeoutId = null;
+    }
+  }
+
+  public resume() {
+    if (!this.running) {
+      this.start();
+    }
   }
 
   private loop = (now: number) => {
@@ -78,11 +98,11 @@ export class FishOverlay {
     }
     // Keep animating if any fish or waiting for next spawn
     if (this.fish.length > 0 || this.nextSpawn - now < 2000) {
-      requestAnimationFrame(this.loop);
+      this.animationFrameId = requestAnimationFrame(this.loop);
     } else {
       this.running = false;
       // Will restart on next spawn
-      setTimeout(() => this.start(), this.nextSpawn - now);
+      this.timeoutId = setTimeout(() => this.start(), this.nextSpawn - now);
     }
   };
 }
