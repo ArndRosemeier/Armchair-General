@@ -207,14 +207,12 @@ export class GameGui {
         btn.style.marginBottom = '8px';
         btn.style.fontFamily = "'MedievalSharp', 'Times New Roman', serif";
         btn.onclick = async () => {
-          // Clear advised opportunity when an action is performed
-          if (this.currentGame) this.currentGame.advisedOpportunity = null;
           const amountRange = action.RequiresAmount(clickedCountries, this.currentGame.activePlayer, this.currentGame);
           let result: string | null = null;
           let amountUsed = 0;
           if (amountRange) {
             const [min, max] = amountRange;
-            let initial = min;
+            let initial = max;
             if (this.currentGame && this.currentGame.advisedOpportunity) {
               const opp = this.currentGame.advisedOpportunity;
               // Check if action and countries match
@@ -247,6 +245,8 @@ export class GameGui {
           } else {
             this.afterAction();
           }
+          // Clear advised opportunity when an action is performed (at the end)
+          if (this.currentGame) this.currentGame.advisedOpportunity = null;
         };
 
         dynamicButtons.push(btn);
@@ -956,6 +956,8 @@ export class GameGui {
         if (panel) panel.innerHTML = '<span style="color:#fff">Sorry, sir, I have no idea what to do!</span>';
         return;
       }
+      // Set advisedOpportunity so the amount dialog can use it
+      if (this.currentGame) this.currentGame.advisedOpportunity = opp;
       // Play advisor animation before showing text
       const { runAdvisorAnimation } = await import('./AdvisorAnimation');
       await runAdvisorAnimation(this, opp);
