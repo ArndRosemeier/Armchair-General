@@ -211,6 +211,22 @@ export function showNewGameDialog(container: HTMLElement): Promise<NewGameDialog
     // Player list state
     let players: PlayerConfig[] = [];
 
+    // Emperor name reservoir
+    const EMPEROR_NAMES = [
+      'Augustus', 'Charlemagne', 'Qin Shi Huang', 'Akbar', 'Justinian',
+      'Napoleon', 'Constantine', 'Ashoka', 'Catherine', 'Meiji',
+      'Trajan', 'Hadrian', 'Aurangzeb', 'Elizabeth', 'Peter',
+      'Victoria', 'Franz Joseph', 'Wilhelm', 'Haile Selassie', 'Menelik'
+    ];
+    let usedEmperorNames: string[] = [];
+    function getRandomEmperorName() {
+      if (usedEmperorNames.length >= EMPEROR_NAMES.length) usedEmperorNames = [];
+      const available = EMPEROR_NAMES.filter(n => !usedEmperorNames.includes(n));
+      const name = available[Math.floor(Math.random() * available.length)];
+      usedEmperorNames.push(name);
+      return name;
+    }
+
     // --- PLAYER CONTROLS COLUMN ---
     // Player list label
     const playerListLabel = document.createElement('div');
@@ -374,7 +390,8 @@ export function showNewGameDialog(container: HTMLElement): Promise<NewGameDialog
     addHumanBtn.onmouseenter = () => addHumanBtn.style.background = 'linear-gradient(90deg,#185a9d 0%,#43cea2 100%)';
     addHumanBtn.onmouseleave = () => addHumanBtn.style.background = 'linear-gradient(90deg,#43cea2 0%,#185a9d 100%)';
     addHumanBtn.onclick = () => {
-      players.push({ name: `Human ${players.filter(p=>!p.isAI).length+1}`, isAI: false });
+      const name = getRandomEmperorName();
+      players.push({ name, isAI: false });
       updatePlayerList();
       updateStartBtn();
     };
@@ -397,7 +414,8 @@ export function showNewGameDialog(container: HTMLElement): Promise<NewGameDialog
     addAIBtn.onmouseenter = () => addAIBtn.style.background = 'linear-gradient(90deg,#ff5e62 0%,#ff9966 100%)';
     addAIBtn.onmouseleave = () => addAIBtn.style.background = 'linear-gradient(90deg,#ff9966 0%,#ff5e62 100%)';
     addAIBtn.onclick = () => {
-      players.push({ name: `AI ${players.filter(p=>p.isAI).length+1}`, isAI: true });
+      const name = getRandomEmperorName() + ' AI';
+      players.push({ name, isAI: true });
       updatePlayerList();
       updateStartBtn();
     };
