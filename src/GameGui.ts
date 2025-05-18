@@ -974,6 +974,15 @@ export class GameGui {
         actionString = actionString.charAt(0).toLowerCase() + actionString.slice(1);
       }
       if (panel) panel.innerHTML = `<span style=\"color:#fff\">I think, ${actionString} would be a good idea.</span>`;
+      // Flash the action result panel to draw attention
+      if (panel) {
+        const originalBg = panel.style.background;
+        panel.style.transition = 'background 0.2s';
+        panel.style.background = '#ffd700';
+        setTimeout(() => {
+          panel.style.background = originalBg;
+        }, 200);
+      }
     });
   }
 
