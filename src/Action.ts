@@ -34,4 +34,14 @@ export abstract class Action {
    * Returns the type of the action as a string.
    */
   abstract Type(): string;
+
+  /**
+   * Return a string describing the action, given a list of countries, the active player, the current game, and an optional amount.
+   * @param countries List of Country objects
+   * @param activePlayer The active player
+   * @param currentGame The current game instance
+   * @param amount Optional amount parameter (default 0)
+   * @returns A string describing the action.
+   */
+  abstract ActionString(countries: Country[], activePlayer: Player, currentGame: Game, amount?: number): string;
 }

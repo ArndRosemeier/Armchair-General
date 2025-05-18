@@ -69,4 +69,10 @@ export class ActionSpy extends Action {
   Type(): string {
     return 'Spy';
   }
+
+  ActionString(countries: Country[], activePlayer: Player, currentGame: Game, amount: number = 0): string {
+    if (countries.length < 1) return 'Spy: No country selected.';
+    const country = countries[countries.length - 1];
+    return `Spying on ${country.name}`;
+  }
 }

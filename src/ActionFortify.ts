@@ -51,4 +51,10 @@ export class ActionFortify extends Action {
   Type(): string {
     return 'Fortify';
   }
+
+  ActionString(countries: Country[], activePlayer: Player, currentGame: Game, amount: number = 0): string {
+    if (countries.length < 1) return 'Fortify: No country selected.';
+    const country = countries[countries.length - 1];
+    return `Fortifying ${country.name}`;
+  }
 }

@@ -200,4 +200,11 @@ export class ActionAttack extends Action {
   Type(): string {
     return 'Attack';
   }
+
+  ActionString(countries: Country[], activePlayer: Player, currentGame: Game, amount: number = 0): string {
+    if (countries.length < 2) return 'Attack: Not enough countries selected.';
+    const fromCountry = countries[countries.length - 2];
+    const toCountry = countries[countries.length - 1];
+    return `Attacking ${toCountry.name} from ${fromCountry.name} with ${amount} soldiers`;
+  }
 }

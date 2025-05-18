@@ -89,4 +89,11 @@ export class ActionCalculateAttack extends Action {
   get countryCountNeeded(): number {
     return 2;
   }
+
+  ActionString(countries: Country[], activePlayer: Player, currentGame: Game, amount: number = 0): string {
+    if (countries.length < 2) return 'Calculate Attack: Not enough countries selected.';
+    const fromCountry = countries[countries.length - 2];
+    const toCountry = countries[countries.length - 1];
+    return `Calculating attack chance for ${toCountry.name} from ${fromCountry.name} with ${amount} soldiers`;
+  }
 }

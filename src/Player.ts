@@ -75,7 +75,7 @@ export class Player {
   /**
    * The AI instance for this player, if AI. Undefined for human players.
    */
-  AI?: AI;
+  AI: AI;
   /**
    * Player's available money.
    */
@@ -109,6 +109,7 @@ export class Player {
     this.isAI = isAI;
     this.actionsLeft = Player.ACTIONS_PER_TURN;
     this.aggressivity = Math.floor(Math.random() * 8) + 2;
+    this.AI = new AI(this, undefined as any); // Game will be set later
   }
 
   /**
@@ -204,5 +205,73 @@ export class Player {
     if (!country.owner && knowledge) return true;
     if (country.owner && country.owner !== this && knowledge && this.game && knowledge.gameTurn === this.game.gameTurn) return true;
     return false;
+  }
+
+  toJSON() {
+    return {
+      id: this.name, // Use name as unique ID
+      name: this.name,
+      color: this.color,
+      ownedCountryIds: this.ownedCountries.map(c => c.name),
+      homeCountryId: this.homeCountry ? this.homeCountry.name : null,
+      isAI: this.isAI,
+      money: this.money,
+      knowledge: this.knowledge.map(k => ({
+        countryId: k.country.name,
+        gameTurn: k.gameTurn,
+        army: k.army,
+        income: k.income
+      })),
+      plannedFortifications: this.plannedFortifications.map(([country, turn]) => [country.name, turn]),
+      aggressivity: this.aggressivity,
+      actionsLeft: this.actionsLeft
+      // AI, game, and actionLog are not serialized (rebuild or ignore for now)
+    };
+  }
+
+  /**
+   * fromJSON: create a Player from plain data, then resolve references.
+   * @param data - plain object from JSON
+   * @param countryRegistry - map of country name to Country instance
+   */
+  static fromJSON(data: any, countryRegistry: Record<string, any>): Player {
+    const p = new Player(
+      data.name,
+      data.color,
+      [], // ownedCountries will be resolved later
+      null, // homeCountry will be resolved later
+      [], // knowledge will be resolved later
+      data.money,
+      data.isAI
+    );
+    p.aggressivity = data.aggressivity;
+    p.actionsLeft = data.actionsLeft ?? Player.ACTIONS_PER_TURN;
+    // Store for later resolution
+    (p as any)._ownedCountryIds = data.ownedCountryIds;
+    (p as any)._homeCountryId = data.homeCountryId;
+    (p as any)._knowledgeRaw = data.knowledge;
+    (p as any)._plannedFortificationsRaw = data.plannedFortifications;
+    return p;
+  }
+
+  /**
+   * After all countries are created, resolve references.
+   */
+  resolveReferences(countryRegistry: Record<string, any>) {
+    this.ownedCountries = ((this as any)._ownedCountryIds || []).map((id: string) => countryRegistry[id]).filter(Boolean);
+    this.homeCountry = (this as any)._homeCountryId ? countryRegistry[(this as any)._homeCountryId] : null;
+    this.knowledge = ((this as any)._knowledgeRaw || []).map((k: any) => ({
+      country: countryRegistry[k.countryId],
+      gameTurn: k.gameTurn,
+      army: k.army,
+      income: k.income
+    }));
+    this.plannedFortifications = ((this as any)._plannedFortificationsRaw || []).map(
+      ([countryId, turn]: [string, number]) => [countryRegistry[countryId], turn]
+    );
+    delete (this as any)._ownedCountryIds;
+    delete (this as any)._homeCountryId;
+    delete (this as any)._knowledgeRaw;
+    delete (this as any)._plannedFortificationsRaw;
   }
 }

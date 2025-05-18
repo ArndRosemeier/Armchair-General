@@ -68,4 +68,10 @@ export class ActionBuyArmies extends Action {
   Type(): string {
     return 'BuyArmies';
   }
+
+  ActionString(countries: Country[], activePlayer: Player, currentGame: Game, amount: number = 0): string {
+    if (countries.length < 1) return 'Buy Armies: No country selected.';
+    const country = countries[countries.length - 1];
+    return `Buying ${amount} armies for ${country.name}`;
+  }
 }

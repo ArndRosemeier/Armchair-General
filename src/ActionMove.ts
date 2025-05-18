@@ -72,4 +72,11 @@ export class ActionMove extends Action {
   Type(): string {
     return 'Move';
   }
+
+  ActionString(countries: Country[], activePlayer: Player, currentGame: Game, amount: number = 0): string {
+    if (countries.length < 2) return 'Move: Not enough countries selected.';
+    const fromCountry = countries[countries.length - 2];
+    const toCountry = countries[countries.length - 1];
+    return `Moving ${amount} armies from ${fromCountry.name} to ${toCountry.name}`;
+  }
 }
