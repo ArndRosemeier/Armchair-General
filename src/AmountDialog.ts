@@ -44,7 +44,7 @@ export function showAmountDialog(min: number, max: number, initial: number = min
     box.appendChild(maxInfo);
 
     // Amount display
-    let amount = Math.max(min, Math.min(max, max));
+    let amount = Math.max(min, Math.min(max, initial));
     const amountDisplay = document.createElement('div');
     amountDisplay.textContent = amount.toLocaleString();
     amountDisplay.style.fontSize = '2rem';

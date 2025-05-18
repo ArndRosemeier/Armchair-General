@@ -207,12 +207,24 @@ export class GameGui {
         btn.style.marginBottom = '8px';
         btn.style.fontFamily = "'MedievalSharp', 'Times New Roman', serif";
         btn.onclick = async () => {
+          // Clear advised opportunity when an action is performed
+          if (this.currentGame) this.currentGame.advisedOpportunity = null;
           const amountRange = action.RequiresAmount(clickedCountries, this.currentGame.activePlayer, this.currentGame);
           let result: string | null = null;
           let amountUsed = 0;
           if (amountRange) {
             const [min, max] = amountRange;
-            const selected = await showAmountDialog(min, max, min);
+            let initial = min;
+            if (this.currentGame && this.currentGame.advisedOpportunity) {
+              const opp = this.currentGame.advisedOpportunity;
+              // Check if action and countries match
+              const sameAction = opp.action === action;
+              const sameCountries = opp.countries.length === clickedCountries.length && opp.countries.every((c: any, i: number) => c === clickedCountries[i]);
+              if (sameAction && sameCountries) {
+                initial = opp.amount;
+              }
+            }
+            const selected = await showAmountDialog(min, max, initial);
             if (selected === null) return; // Cancelled
             amountUsed = selected;
             result = await action.Act(clickedCountries, this.currentGame.activePlayer, this.currentGame, selected);

@@ -3,6 +3,7 @@ import { Player } from './Player';
 import { Country } from './Country';
 import { AI } from './AI';
 import { GameGui } from './GameGui';
+import { Opportunity } from './Opportunity';
 
 /**
  * Core game logic class for RiskTs.
@@ -22,12 +23,14 @@ export class Game {
   gameTurn: number;
   activePlayerIndex: number;
   gui?: GameGui;
+  advisedOpportunity: Opportunity | null;
 
   constructor(worldMap: WorldMap, players: Player[] = []) {
     this.worldMap = worldMap;
     this.players = players;
     this.gameTurn = 1;
     this.activePlayerIndex = 0;
+    this.advisedOpportunity = null;
     // Start the first player's turn
     if (this.players.length > 0) {
       this.activePlayer.startTurn();
@@ -62,6 +65,8 @@ export class Game {
     });
     // Start the new active player's turn
     this.activePlayer.startTurn();
+    // Clear advised opportunity at the start of a new turn
+    this.advisedOpportunity = null;
   }
 
    /**
@@ -142,6 +147,39 @@ export class Game {
     const game = new Game(worldMap, players);
     if (gui) game.gui = gui;
     // Now set the game reference on each AI instance
+    for (const player of players) {
+      player.game = game;
+      if (player.isAI && player.AI) {
+        player.AI.game = game;
+        player.AI.player = player;
+      }
+    }
+    return game;
+  }
+
+  toJSON() {
+    return {
+      gameTurn: this.gameTurn,
+      activePlayerName: this.players[this.activePlayerIndex]?.name ?? null,
+      playerNames: this.players.map(p => p.name),
+      // You do NOT need to serialize worldMap if you can regenerate it from countries
+      // Just serialize the countries and players separately
+    };
+  }
+
+  /**
+   * fromJSON: create a Game from plain data, after countries and players are created.
+   * @param data - plain object from JSON
+   * @param players - array of Player instances
+   * @param worldMap - WorldMap instance (regenerated from countries)
+   */
+  static fromJSON(data: any, players: Player[], worldMap: WorldMap): Game {
+    const game = new Game(worldMap, players);
+    game.gameTurn = data.gameTurn;
+    // Find the index of the active player by name
+    game.activePlayerIndex = players.findIndex(p => p.name === data.activePlayerName);
+    if (game.activePlayerIndex === -1) game.activePlayerIndex = 0;
+    // Set the game reference on each player
     for (const player of players) {
       player.game = game;
       if (player.isAI && player.AI) {
