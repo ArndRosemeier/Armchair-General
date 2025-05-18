@@ -934,21 +934,31 @@ export class GameGui {
     container.appendChild(wrapper);
 
     // Add click handler to advisor image
-    advisorImg.addEventListener('click', () => {
+    advisorImg.addEventListener('click', async () => {
       const player = this.currentGame?.activePlayer;
       if (!player || !player.AI) return;
-      player.AI.game = this.currentGame;
+      player.AI.game = this.currentGame; // Ensure AI has a valid game reference
       const opp = player.AI.findBestOpportunity();
       const panel = document.getElementById('action-result-panel');
       if (!opp) {
         if (panel) panel.innerHTML = '<span style="color:#fff">Sorry, sir, I have no idea what to do!</span>';
         return;
       }
+      // Play advisor animation before showing text
+      const { runAdvisorAnimation } = await import('./AdvisorAnimation');
+      await runAdvisorAnimation(this, opp);
       let actionString = opp.action.ActionString(opp.countries, player, this.currentGame, opp.amount);
       if (actionString.length > 0) {
         actionString = actionString.charAt(0).toLowerCase() + actionString.slice(1);
       }
-      if (panel) panel.innerHTML = `<span style="color:#fff">I think, ${actionString} would be a good idea.</span>`;
+      if (panel) panel.innerHTML = `<span style=\"color:#fff\">I think, ${actionString} would be a good idea.</span>`;
     });
+  }
+
+  /**
+   * Allows external code (e.g., AdvisorAnimation) to set the clicked countries for simulation.
+   */
+  public setClickedCountryNames(names: string[]) {
+    this.clickedCountryNames = names;
   }
 }
