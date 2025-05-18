@@ -13,6 +13,10 @@ export class ActionSpy extends Action {
     }
     const lastCountry = countries[countries.length - 1];
     if (lastCountry.owner == activePlayer) return null;
+    const knowledge = activePlayer.knowledge.find(k => k.country === lastCountry);
+    const gameTurn = activePlayer.game?.gameTurn;
+    if (!lastCountry.owner && knowledge) return null;
+    if (lastCountry.owner && lastCountry.owner !== activePlayer && knowledge && knowledge.gameTurn === gameTurn) return null;
     return `Spy on ${lastCountry.name}`;
   }
 
