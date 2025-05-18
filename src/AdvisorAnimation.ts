@@ -32,11 +32,97 @@ function drawRedSplash(ctx: CanvasRenderingContext2D, x: number, y: number, star
   animate();
 }
 
+// Draws a rainbow splash (concentric rings) at (x, y) on the given canvas for 1 second
+function drawRainbowSplash(ctx: CanvasRenderingContext2D, x: number, y: number, start: number, duration: number) {
+  const animate = () => {
+    const now = performance.now();
+    const t = Math.min(1, (now - start) / duration);
+    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+    for (let i = 0; i < 5; i++) {
+      const r = 18 + 28 * t + i * 12;
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, 2 * Math.PI);
+      // Rainbow: cycle hue for each ring
+      const hue = (360 * (i / 5) + 360 * t) % 360;
+      ctx.strokeStyle = `hsla(${hue}, 95%, 55%, ${0.85 * (1 - t)})`;
+      ctx.lineWidth = 5 - i * 1.2;
+      ctx.globalAlpha = 1 * (1 - t);
+      ctx.shadowColor = `hsla(${hue}, 95%, 65%, 0.8)`;
+      ctx.shadowBlur = 18;
+      ctx.stroke();
+      ctx.restore();
+    }
+    if (t < 1) {
+      requestAnimationFrame(animate);
+    } else {
+      ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+    }
+  };
+  animate();
+}
+
+// Animate the hand image moving to the center, then play splash, then retreat
+async function animateHandAndSplash(ctx: CanvasRenderingContext2D, x: number, y: number, overlay: HTMLCanvasElement) {
+  return new Promise<void>((resolve) => {
+    const handImg = new window.Image();
+    handImg.src = 'Hand.png';
+    handImg.onload = () => {
+      const handW = handImg.width * 0.5;
+      const handH = handImg.height * 0.5;
+      // Animation params
+      const duration = 500; // ms for hand to move in (faster)
+      const splashDuration = 1000; // ms for splash
+      const retreatDuration = 700; // ms for hand to move out
+      const totalDuration = duration + splashDuration + retreatDuration;
+      const start = performance.now();
+      // Start and end positions for the hand (bottom left corner)
+      const startX = overlay.width + handW * 0.2;
+      const startY = -handH * 0.8;
+      const endX = x;
+      const endY = y;
+      function drawFrame(now: number) {
+        const t = now - start;
+        ctx.clearRect(0, 0, overlay.width, overlay.height);
+        let handX = startX, handY = startY;
+        // Hand moves in
+        if (t < duration) {
+          const p = t / duration;
+          handX = startX + (endX - startX) * p;
+          handY = startY + (endY - startY) * p;
+        } else if (t < duration + splashDuration) {
+          // Hand is at target, play splash
+          handX = endX;
+          handY = endY;
+          drawRainbowSplash(ctx, x, y, start + duration, splashDuration);
+        } else if (t < totalDuration) {
+          // Hand retreats
+          const p = (t - duration - splashDuration) / retreatDuration;
+          handX = endX + (startX - endX) * p;
+          handY = endY + (startY - endY) * p;
+        }
+        // Draw hand with bottom left at (handX, handY)
+        ctx.save();
+        ctx.globalAlpha = 1;
+        ctx.drawImage(handImg, handX, handY - handH, handW, handH);
+        ctx.restore();
+        if (t < totalDuration) {
+          requestAnimationFrame(drawFrame);
+        } else {
+          ctx.clearRect(0, 0, overlay.width, overlay.height);
+          resolve();
+        }
+      }
+      requestAnimationFrame(drawFrame);
+    };
+  });
+}
+
 // Main function to run the advisor animation
 export async function runAdvisorAnimation(gameGui: GameGui, opportunity: Opportunity) {
   const mapArea = document.querySelector('div[style*="flex: 3"]') as HTMLElement;
   if (!mapArea) return;
-  // Create overlay canvas for splashes
+  // Create overlay canvas for splashes and hand
   let overlay = document.getElementById('advisor-animation-overlay') as HTMLCanvasElement | null;
   if (!overlay) {
     overlay = document.createElement('canvas');
@@ -82,11 +168,8 @@ export async function runAdvisorAnimation(gameGui: GameGui, opportunity: Opportu
       cx *= scaleX;
       cy *= scaleY;
     }
-    // Draw splash
-    const start = performance.now();
-    drawRedSplash(ctx, cx, cy, start, 1000);
-    // Wait 1 second
-    await new Promise(res => setTimeout(res, 1000));
+    // Animate hand and splash
+    await animateHandAndSplash(ctx, cx, cy, overlay);
     ctx.clearRect(0, 0, overlay.width, overlay.height);
   }
   // After all, update action buttons with full click history
