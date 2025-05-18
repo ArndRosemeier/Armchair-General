@@ -862,14 +862,48 @@ export class GameGui {
     actionResultPanel.innerHTML = '<span style="color:#888">No recent action.</span>';
     sidebar.appendChild(actionResultPanel);
 
-    // Action buttons
+    // Action buttons panel (no End Turn button)
+    const actionPanel = document.createElement('div');
+    actionPanel.id = 'action-panel';
+    actionPanel.style.display = 'flex';
+    actionPanel.style.flexDirection = 'row';
+    actionPanel.style.alignItems = 'flex-start';
+    actionPanel.style.background = '#a67c52';
+    actionPanel.style.border = '1px solid #555';
+    actionPanel.style.borderRadius = '8px';
+    actionPanel.style.padding = '16px 12px';
+    actionPanel.style.marginTop = 'auto';
+    actionPanel.style.marginBottom = '18px';
+    actionPanel.style.minHeight = '120px';
+    // Left: action buttons area (80%)
     const actionsDiv = document.createElement('div');
     actionsDiv.id = 'action-buttons-area';
     actionsDiv.style.display = 'flex';
     actionsDiv.style.flexDirection = 'column';
     actionsDiv.style.gap = '12px';
-    actionsDiv.style.marginTop = 'auto';
-
+    actionsDiv.style.flex = '0 1 80%';
+    actionsDiv.style.maxWidth = '80%';
+    // Right: advisor image (20%)
+    const advisorDiv = document.createElement('div');
+    advisorDiv.style.flex = '1 1 20%';
+    advisorDiv.style.display = 'flex';
+    advisorDiv.style.alignItems = 'flex-end';
+    advisorDiv.style.justifyContent = 'center';
+    advisorDiv.style.height = '100%';
+    advisorDiv.style.marginLeft = '12px';
+    const advisorImg = document.createElement('img');
+    advisorImg.src = 'Advisor.png';
+    advisorImg.alt = 'Advisor';
+    advisorImg.style.maxWidth = '100%';
+    advisorImg.style.maxHeight = '96px';
+    advisorImg.style.objectFit = 'contain';
+    advisorImg.style.borderRadius = '6px';
+    advisorDiv.appendChild(advisorImg);
+    // Assemble panel
+    actionPanel.appendChild(actionsDiv);
+    actionPanel.appendChild(advisorDiv);
+    sidebar.appendChild(actionPanel);
+    // End Turn button (below panel)
     const endTurnBtn = document.createElement('button');
     endTurnBtn.textContent = 'End Turn';
     endTurnBtn.classList.add('persistent-action-btn');
@@ -882,6 +916,7 @@ export class GameGui {
     endTurnBtn.style.cursor = 'pointer';
     endTurnBtn.style.boxShadow = '0 2px 8px rgba(30,32,34,0.13)';
     endTurnBtn.style.fontFamily = "'MedievalSharp', 'Times New Roman', serif";
+    endTurnBtn.style.marginBottom = '18px';
     endTurnBtn.onclick = () => {
       if (this.paused) return;
       if (this.currentGame) {
@@ -891,9 +926,7 @@ export class GameGui {
         this.turnStarted();
       }
     };
-    actionsDiv.appendChild(endTurnBtn);
-
-    sidebar.appendChild(actionsDiv);
+    sidebar.appendChild(endTurnBtn);
 
     // Assemble
     wrapper.appendChild(mapArea);
