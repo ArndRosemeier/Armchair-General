@@ -651,39 +651,49 @@ export class GameGui {
     // Right: Sidebar
     const sidebar = document.createElement('div');
 
-    // Add New Game button at the very top
-    const newGameBtn = document.createElement('button');
-    newGameBtn.textContent = 'New Game';
-    newGameBtn.classList.add('persistent-action-btn');
-    newGameBtn.style.padding = '12px 0';
-    newGameBtn.style.fontSize = '1.1rem';
-    newGameBtn.style.background = 'linear-gradient(90deg,#00c3ff 0%,#ffff1c 100%)';
-    newGameBtn.style.color = '#222';
-    newGameBtn.style.border = 'none';
-    newGameBtn.style.borderRadius = '8px';
-    newGameBtn.style.cursor = 'pointer';
-    newGameBtn.style.boxShadow = '0 2px 8px rgba(30,32,34,0.13)';
-    newGameBtn.style.marginBottom = '24px';
-    newGameBtn.style.fontFamily = "'MedievalSharp', 'Times New Roman', serif";
-    newGameBtn.onclick = () => {
-      this.startNewGame();
-    };
-    sidebar.appendChild(newGameBtn);
+    // --- Replace New Game, Save Game, Load Game buttons with images ---
+    const buttonRow = document.createElement('div');
+    buttonRow.style.display = 'flex';
+    buttonRow.style.flexDirection = 'row';
+    buttonRow.style.justifyContent = 'center';
+    buttonRow.style.alignItems = 'center';
+    buttonRow.style.gap = '18px';
+    buttonRow.style.marginBottom = '24px';
+    buttonRow.style.width = '100%';
+    buttonRow.style.minWidth = '0';
 
-    // --- Save Game button ---
-    const saveBtn = document.createElement('button');
-    saveBtn.textContent = 'Save Game';
-    saveBtn.style.padding = '12px 0';
-    saveBtn.style.fontSize = '1.1rem';
-    saveBtn.style.background = 'linear-gradient(90deg,#43cea2 0%,#ffd700 100%)';
-    saveBtn.style.color = '#222';
-    saveBtn.style.border = 'none';
-    saveBtn.style.borderRadius = '8px';
-    saveBtn.style.cursor = 'pointer';
-    saveBtn.style.boxShadow = '0 2px 8px rgba(30,32,34,0.13)';
-    saveBtn.style.marginBottom = '12px';
-    saveBtn.style.fontFamily = "'MedievalSharp', 'Times New Roman', serif";
-    saveBtn.onclick = () => {
+    // Helper to create an image button
+    function createImageButton(src: string, alt: string, onClick: () => void) {
+      const img = document.createElement('img');
+      img.src = src;
+      img.alt = alt;
+      img.style.flex = '1 1 0';
+      img.style.width = '0';
+      img.style.minWidth = '0';
+      img.style.height = 'auto';
+      img.style.objectFit = 'contain';
+      img.style.cursor = 'pointer';
+      img.style.borderRadius = '8px';
+      img.style.boxShadow = '0 2px 8px rgba(30,32,34,0.13)';
+      img.style.transition = 'transform 0.1s, box-shadow 0.1s';
+      img.addEventListener('mouseenter', () => {
+        img.style.transform = 'scale(1.08)';
+        img.style.boxShadow = '0 4px 16px #ffd700';
+      });
+      img.addEventListener('mouseleave', () => {
+        img.style.transform = 'scale(1)';
+        img.style.boxShadow = '0 2px 8px rgba(30,32,34,0.13)';
+      });
+      img.onclick = onClick;
+      img.style.display = 'block';
+      img.style.margin = '0 0';
+      return img;
+    }
+
+    // New Game
+    const newGameImg = createImageButton('newgame.png', 'New Game', () => this.startNewGame());
+    // Save Game
+    const saveGameImg = createImageButton('savegame.png', 'Save Game', () => {
       try {
         if (!this.currentGame) throw new Error('No game to save');
         const json = Serializer.serialize(this.currentGame);
@@ -702,23 +712,9 @@ export class GameGui {
         alert('Save failed: ' + (err && (err as any).message ? (err as any).message : err));
         throw err;
       }
-    };
-    sidebar.appendChild(saveBtn);
-
-    // --- Load Game button ---
-    const loadBtn = document.createElement('button');
-    loadBtn.textContent = 'Load Game';
-    loadBtn.style.padding = '12px 0';
-    loadBtn.style.fontSize = '1.1rem';
-    loadBtn.style.background = 'linear-gradient(90deg,#ff5e62 0%,#00c3ff 100%)';
-    loadBtn.style.color = '#222';
-    loadBtn.style.border = 'none';
-    loadBtn.style.borderRadius = '8px';
-    loadBtn.style.cursor = 'pointer';
-    loadBtn.style.boxShadow = '0 2px 8px rgba(30,32,34,0.13)';
-    loadBtn.style.marginBottom = '24px';
-    loadBtn.style.fontFamily = "'MedievalSharp', 'Times New Roman', serif";
-    loadBtn.onclick = () => {
+    });
+    // Load Game
+    const loadGameImg = createImageButton('loadgame.png', 'Load Game', () => {
       const input = document.createElement('input');
       input.type = 'file';
       input.accept = '.json,application/json';
@@ -750,8 +746,12 @@ export class GameGui {
         reader.readAsText(file);
       };
       input.click();
-    };
-    sidebar.appendChild(loadBtn);
+    });
+
+    buttonRow.appendChild(newGameImg);
+    buttonRow.appendChild(saveGameImg);
+    buttonRow.appendChild(loadGameImg);
+    sidebar.appendChild(buttonRow);
 
     // Add country info panel below
     sidebar.appendChild(countryInfoPanel);

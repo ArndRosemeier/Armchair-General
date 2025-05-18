@@ -83,19 +83,23 @@ async function animateHandAndSplash(ctx: CanvasRenderingContext2D, x: number, y:
       const endX = x;
       const endY = y;
       let splashStarted = false;
+      let frameCount = 0;
       function drawFrame(now: number) {
         const t = now - start;
         ctx.clearRect(0, 0, overlay.width, overlay.height);
         let handX = startX, handY = startY;
+        let handAlpha = 1;
         // Hand moves in
         if (t < duration) {
           const p = t / duration;
           handX = startX + (endX - startX) * p;
           handY = startY + (endY - startY) * p;
+          handAlpha = p; // Fade in
         } else if (t < duration + handPause) {
           // Hand is at target, pause, splash starts
           handX = endX;
           handY = endY;
+          handAlpha = 1;
         } else {
           // Hand retreats while splash plays
           if (!splashStarted) {
@@ -104,7 +108,10 @@ async function animateHandAndSplash(ctx: CanvasRenderingContext2D, x: number, y:
           const retreatT = Math.min(1, (t - duration - handPause) / retreatDuration);
           handX = endX + (startX - endX) * retreatT;
           handY = endY + (startY - endY) * retreatT;
+          handAlpha = 1 - retreatT; // Fade out
         }
+        // Clamp handAlpha to a minimum of 0.01
+        handAlpha = Math.max(0.01, Math.min(1, handAlpha));
         // Draw splash (starts at duration, lasts splashDuration)
         const splashT = Math.min(1, (t - duration) / splashDuration);
         if (splashT < 1 && t >= duration) {
@@ -125,7 +132,7 @@ async function animateHandAndSplash(ctx: CanvasRenderingContext2D, x: number, y:
         }
         // Draw hand with bottom left at (handX, handY)
         ctx.save();
-        ctx.globalAlpha = 1;
+        ctx.globalAlpha = handAlpha;
         ctx.drawImage(handImg, handX, handY - handH, handW, handH);
         ctx.restore();
         if (t < duration + Math.max(splashDuration, handPause + retreatDuration)) {

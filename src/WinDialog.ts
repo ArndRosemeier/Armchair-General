@@ -44,12 +44,51 @@ export function showWinDialog(playerName: string, winPercent: number, onClose?: 
   box.style.gap = '32px';
   box.style.position = 'relative';
   box.style.zIndex = '1';
-  const msg = document.createElement('div');
-  msg.innerHTML = `<div style="font-size:2.5rem;font-weight:bold;color:#222;text-shadow:0 2px 8px #fff,0 0 8px #000">🎉 ${playerName} WINS! 🎉</div><div style="font-size:1.3rem;color:#333;margin-top:18px;text-shadow:0 2px 8px #fff,0 0 8px #000">has reached ${winPercent.toFixed(0)}% of world income!</div>`;
-  box.appendChild(msg);
+  // Message container in upper right
+  const msgContainer = document.createElement('div');
+  msgContainer.style.position = 'absolute';
+  msgContainer.style.top = '32px';
+  msgContainer.style.right = '48px';
+  msgContainer.style.display = 'flex';
+  msgContainer.style.flexDirection = 'column';
+  msgContainer.style.alignItems = 'flex-end';
+  msgContainer.style.zIndex = '2';
+  msgContainer.style.padding = '12px 24px';
+  msgContainer.style.background = 'rgba(255,255,255,0.0)';
+  // WINNER text
+  const winnerText = document.createElement('div');
+  winnerText.textContent = 'WINNER';
+  winnerText.style.fontFamily = "'MedievalSharp', 'Times New Roman', serif";
+  winnerText.style.fontSize = '2.7rem';
+  winnerText.style.fontWeight = 'bold';
+  winnerText.style.color = '#222';
+  winnerText.style.textShadow = '0 2px 8px #fff,0 0 8px #000';
+  msgContainer.appendChild(winnerText);
+  // Player name
+  const nameText = document.createElement('div');
+  nameText.textContent = playerName;
+  nameText.style.fontFamily = "'MedievalSharp', 'Times New Roman', serif";
+  nameText.style.fontSize = '2.1rem';
+  nameText.style.fontWeight = 'bold';
+  nameText.style.color = '#fff';
+  nameText.style.marginTop = '8px';
+  nameText.style.textShadow = '0 0 16px #ffd700, 0 0 32px #43cea2, 0 0 48px #ff00cc, 0 0 64px #00e6e6';
+  nameText.style.animation = 'win-glow 2.2s linear infinite';
+  // Add keyframes for the glow animation
+  const styleSheet = document.createElement('style');
+  styleSheet.textContent = `@keyframes win-glow {
+    0% { text-shadow: 0 0 16px #ffd700, 0 0 32px #43cea2, 0 0 48px #ff00cc, 0 0 64px #00e6e6; }
+    25% { text-shadow: 0 0 24px #43cea2, 0 0 40px #ffd700, 0 0 56px #00e6e6, 0 0 72px #ff00cc; }
+    50% { text-shadow: 0 0 32px #ff00cc, 0 0 48px #00e6e6, 0 0 64px #ffd700, 0 0 80px #43cea2; }
+    75% { text-shadow: 0 0 24px #00e6e6, 0 0 40px #ff00cc, 0 0 56px #43cea2, 0 0 72px #ffd700; }
+    100% { text-shadow: 0 0 16px #ffd700, 0 0 32px #43cea2, 0 0 48px #ff00cc, 0 0 64px #00e6e6; }
+  }`;
+  document.head.appendChild(styleSheet);
+  msgContainer.appendChild(nameText);
+  // Button
   const closeBtn = document.createElement('button');
   closeBtn.textContent = 'OK';
-  closeBtn.style.marginTop = '24px';
+  closeBtn.style.marginTop = '18px';
   closeBtn.style.padding = '12px 36px';
   closeBtn.style.fontSize = '1.3rem';
   closeBtn.style.border = 'none';
@@ -65,7 +104,8 @@ export function showWinDialog(playerName: string, winPercent: number, onClose?: 
     if (modal && modal.parentNode) modal.parentNode.removeChild(modal);
     if (onClose) onClose();
   };
-  box.appendChild(closeBtn);
+  msgContainer.appendChild(closeBtn);
+  box.appendChild(msgContainer);
   modal.appendChild(box);
   document.body.appendChild(modal);
   // --- Fireworks animation ---
@@ -151,15 +191,15 @@ export function showWinDialog(playerName: string, winPercent: number, onClose?: 
           p.alpha -= 0.012 + Math.random() * 0.01;
           p.age++;
           ctx.save();
-          ctx.beginPath();
+      ctx.beginPath();
           ctx.arc(p.x, p.y, 2.2, 0, 2 * Math.PI);
-          ctx.fillStyle = p.color;
+      ctx.fillStyle = p.color;
           ctx.globalAlpha = Math.max(0, p.alpha);
           ctx.shadowColor = p.color;
           ctx.shadowBlur = 8;
-          ctx.fill();
+      ctx.fill();
           ctx.restore();
-        }
+    }
         fw.particles = fw.particles.filter(p => p.alpha > 0.05 && p.age < 90);
       }
     }

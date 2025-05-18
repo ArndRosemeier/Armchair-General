@@ -66,5 +66,53 @@ export class Country {
     }
     return true;
   }
+
+  toJSON() {
+    return {
+      id: this.name, // Use name as unique ID
+      name: this.name,
+      ownerId: this.owner ? this.owner.name : null,
+      armies: this.armies,
+      income: this.income,
+      coordinates: this.coordinates,
+      border: this.border,
+      oceanBorder: this.oceanBorder,
+      neighborIds: this.neighbors.map(n => n.name),
+      color: this.color,
+      fortified: this.fortified
+    };
+  }
+
+  /**
+   * fromJSON: create a Country from plain data, then resolve references.
+   * @param data - plain object from JSON
+   * @param playerRegistry - map of player name to Player instance
+   * @param countryRegistry - map of country name to Country instance
+   */
+  static fromJSON(data: any, playerRegistry: Record<string, any>, countryRegistry: Record<string, any>): Country {
+    const c = new Country(data.name, null, data.armies, data.income);
+    c.coordinates = data.coordinates;
+    c.border = data.border;
+    c.oceanBorder = data.oceanBorder;
+    c.color = data.color;
+    c.fortified = data.fortified;
+    // owner and neighbors will be resolved after all countries/players are created
+    // Store for later resolution
+    (c as any)._ownerId = data.ownerId;
+    (c as any)._neighborIds = data.neighborIds;
+    // Register in countryRegistry
+    countryRegistry[data.name] = c;
+    return c;
+  }
+
+  /**
+   * After all countries and players are created, resolve references.
+   */
+  resolveReferences(playerRegistry: Record<string, any>, countryRegistry: Record<string, any>) {
+    this.owner = (this as any)._ownerId ? playerRegistry[(this as any)._ownerId] : null;
+    this.neighbors = ((this as any)._neighborIds || []).map((n: string) => countryRegistry[n]).filter(Boolean);
+    delete (this as any)._ownerId;
+    delete (this as any)._neighborIds;
+  }
 }
 
