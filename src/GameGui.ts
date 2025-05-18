@@ -215,8 +215,16 @@ export class GameGui {
             let initial = max;
             if (this.currentGame && this.currentGame.advisedOpportunity) {
               const opp = this.currentGame.advisedOpportunity;
+              // Debug: check for duplicate country instances
+              const worldCountries = this.currentGame.worldMap.getCountries();
+              for (const c of opp.countries) {
+                const byName = worldCountries.find((wc: any) => wc.name === c.name);
+                if (byName && byName !== c) {
+                  console.warn('[Advisor/Action] Country instance mismatch:', c.name, c, byName);
+                }
+              }
               // Check if action and countries match
-              const sameAction = opp.action === action;
+              const sameAction = opp.action.Type() === action.Type();
               const sameCountries = opp.countries.length === clickedCountries.length && opp.countries.every((c: any, i: number) => c === clickedCountries[i]);
               if (sameAction && sameCountries) {
                 initial = opp.amount;
