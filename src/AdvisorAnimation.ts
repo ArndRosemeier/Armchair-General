@@ -62,7 +62,7 @@ function drawRainbowSplash(ctx: CanvasRenderingContext2D, x: number, y: number, 
   animate();
 }
 
-// Animate the hand image moving to the center, then play splash, then retreat
+// Animate the hand image moving to the center, then play splash and retreat at the same time
 async function animateHandAndSplash(ctx: CanvasRenderingContext2D, x: number, y: number, overlay: HTMLCanvasElement) {
   return new Promise<void>((resolve) => {
     const handImg = new window.Image();
@@ -72,15 +72,17 @@ async function animateHandAndSplash(ctx: CanvasRenderingContext2D, x: number, y:
       const handH = handImg.height * 0.5;
       // Animation params
       const duration = 500; // ms for hand to move in (faster)
+      const handPause = 200; // ms to pause at the country
       const splashDuration = 1000; // ms for splash
       const retreatDuration = 700; // ms for hand to move out
-      const totalDuration = duration + splashDuration + retreatDuration;
+      const totalDuration = duration + splashDuration; // hand and splash start together
       const start = performance.now();
       // Start and end positions for the hand (bottom left corner)
-      const startX = overlay.width + handW * 0.2;
-      const startY = -handH * 0.8;
+      const startX = x + 100;
+      const startY = y - 100;
       const endX = x;
       const endY = y;
+      let splashStarted = false;
       function drawFrame(now: number) {
         const t = now - start;
         ctx.clearRect(0, 0, overlay.width, overlay.height);
@@ -90,23 +92,43 @@ async function animateHandAndSplash(ctx: CanvasRenderingContext2D, x: number, y:
           const p = t / duration;
           handX = startX + (endX - startX) * p;
           handY = startY + (endY - startY) * p;
-        } else if (t < duration + splashDuration) {
-          // Hand is at target, play splash
+        } else if (t < duration + handPause) {
+          // Hand is at target, pause, splash starts
           handX = endX;
           handY = endY;
-          drawRainbowSplash(ctx, x, y, start + duration, splashDuration);
-        } else if (t < totalDuration) {
-          // Hand retreats
-          const p = (t - duration - splashDuration) / retreatDuration;
-          handX = endX + (startX - endX) * p;
-          handY = endY + (startY - endY) * p;
+        } else {
+          // Hand retreats while splash plays
+          if (!splashStarted) {
+            splashStarted = true;
+          }
+          const retreatT = Math.min(1, (t - duration - handPause) / retreatDuration);
+          handX = endX + (startX - endX) * retreatT;
+          handY = endY + (startY - endY) * retreatT;
+        }
+        // Draw splash (starts at duration, lasts splashDuration)
+        const splashT = Math.min(1, (t - duration) / splashDuration);
+        if (splashT < 1 && t >= duration) {
+          for (let i = 0; i < 5; i++) {
+            const r = 18 + 28 * splashT + i * 12;
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(x, y, r, 0, 2 * Math.PI);
+            const hue = (360 * (i / 5) + 360 * splashT) % 360;
+            ctx.strokeStyle = `hsla(${hue}, 95%, 55%, ${0.85 * (1 - splashT)})`;
+            ctx.lineWidth = 5 - i * 1.2;
+            ctx.globalAlpha = 1 * (1 - splashT);
+            ctx.shadowColor = `hsla(${hue}, 95%, 65%, 0.8)`;
+            ctx.shadowBlur = 18;
+            ctx.stroke();
+            ctx.restore();
+          }
         }
         // Draw hand with bottom left at (handX, handY)
         ctx.save();
         ctx.globalAlpha = 1;
         ctx.drawImage(handImg, handX, handY - handH, handW, handH);
         ctx.restore();
-        if (t < totalDuration) {
+        if (t < duration + Math.max(splashDuration, handPause + retreatDuration)) {
           requestAnimationFrame(drawFrame);
         } else {
           ctx.clearRect(0, 0, overlay.width, overlay.height);
@@ -122,21 +144,26 @@ async function animateHandAndSplash(ctx: CanvasRenderingContext2D, x: number, y:
 export async function runAdvisorAnimation(gameGui: GameGui, opportunity: Opportunity) {
   const mapArea = document.querySelector('div[style*="flex: 3"]') as HTMLElement;
   if (!mapArea) return;
+  // Get map area position relative to viewport
+  const mapRect = mapArea.getBoundingClientRect();
   // Create overlay canvas for splashes and hand
   let overlay = document.getElementById('advisor-animation-overlay') as HTMLCanvasElement | null;
   if (!overlay) {
     overlay = document.createElement('canvas');
     overlay.id = 'advisor-animation-overlay';
-    overlay.width = mapArea.clientWidth;
-    overlay.height = mapArea.clientHeight;
-    overlay.style.position = 'absolute';
+    overlay.width = window.innerWidth;
+    overlay.height = window.innerHeight;
+    overlay.style.position = 'fixed';
     overlay.style.left = '0';
     overlay.style.top = '0';
     overlay.style.pointerEvents = 'none';
-    overlay.style.width = '100%';
-    overlay.style.height = '100%';
-    overlay.style.zIndex = '100';
-    mapArea.appendChild(overlay);
+    overlay.style.width = '100vw';
+    overlay.style.height = '100vh';
+    overlay.style.zIndex = '9999';
+    document.body.appendChild(overlay);
+  } else {
+    overlay.width = window.innerWidth;
+    overlay.height = window.innerHeight;
   }
   const ctx = overlay.getContext('2d');
   if (!ctx) return;
@@ -158,7 +185,7 @@ export async function runAdvisorAnimation(gameGui: GameGui, opportunity: Opportu
         <div><b>Recency:</b> ${info.recency !== undefined ? info.recency : '?'}</div>
       `;
     }
-    // Get center in canvas coordinates
+    // Get center in canvas coordinates (relative to mapArea)
     let [cx, cy] = country.center();
     // If map is scaled, adjust
     const mapCanvas = mapArea.querySelector('canvas');
@@ -168,6 +195,9 @@ export async function runAdvisorAnimation(gameGui: GameGui, opportunity: Opportu
       cx *= scaleX;
       cy *= scaleY;
     }
+    // Offset to viewport coordinates
+    cx += mapRect.left;
+    cy += mapRect.top;
     // Animate hand and splash
     await animateHandAndSplash(ctx, cx, cy, overlay);
     ctx.clearRect(0, 0, overlay.width, overlay.height);
