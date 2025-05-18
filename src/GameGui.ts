@@ -932,5 +932,23 @@ export class GameGui {
     wrapper.appendChild(mapArea);
     wrapper.appendChild(sidebar);
     container.appendChild(wrapper);
+
+    // Add click handler to advisor image
+    advisorImg.addEventListener('click', () => {
+      const player = this.currentGame?.activePlayer;
+      if (!player || !player.AI) return;
+      player.AI.game = this.currentGame;
+      const opp = player.AI.findBestOpportunity();
+      const panel = document.getElementById('action-result-panel');
+      if (!opp) {
+        if (panel) panel.innerHTML = '<span style="color:#fff">Sorry, sir, I have no idea what to do!</span>';
+        return;
+      }
+      let actionString = opp.action.ActionString(opp.countries, player, this.currentGame, opp.amount);
+      if (actionString.length > 0) {
+        actionString = actionString.charAt(0).toLowerCase() + actionString.slice(1);
+      }
+      if (panel) panel.innerHTML = `<span style="color:#fff">I think, ${actionString} would be a good idea.</span>`;
+    });
   }
 }
