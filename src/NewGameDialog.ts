@@ -1,8 +1,10 @@
 import { WorldMap } from './WorldMap';
 import { Renderer } from './Renderer';
 import { Country } from './Country';
+import { Player } from './Player';
+import { Game } from './Game';
 
-export type PlayerConfig = { name: string; isAI: boolean };
+export type PlayerConfig = { name: string; isAI: boolean; color: string };
 
 export interface NewGameDialogResult {
   map: WorldMap;
@@ -31,10 +33,10 @@ export function showNewGameDialog(container: HTMLElement): Promise<NewGameDialog
 
     // Dialog
     const dialog = document.createElement('div');
-    dialog.style.width = 'min(96vw, 760px)';
-    dialog.style.height = 'min(96vh, 520px)';
+    dialog.style.width = 'min(96vw, 1140px)';
+    dialog.style.height = 'min(96vh, 624px)';
     dialog.style.minWidth = '600px';
-    dialog.style.minHeight = '440px';
+    dialog.style.minHeight = '528px';
     dialog.style.background = 'linear-gradient(120deg, #232526 0%, #414345 100%)';
     dialog.style.borderRadius = '20px';
     dialog.style.boxShadow = '0 12px 48px rgba(0,0,0,0.55)';
@@ -72,7 +74,7 @@ export function showNewGameDialog(container: HTMLElement): Promise<NewGameDialog
 
     // Left: Map preview column
     const leftCol = document.createElement('div');
-    leftCol.style.flex = '1.1';
+    leftCol.style.flex = '2.2';
     leftCol.style.display = 'flex';
     leftCol.style.flexDirection = 'column';
     leftCol.style.alignItems = 'center';
@@ -85,8 +87,8 @@ export function showNewGameDialog(container: HTMLElement): Promise<NewGameDialog
 
     // Map preview area (3:2 ratio, e.g. 300x200)
     const mapPreviewDiv = document.createElement('div');
-    mapPreviewDiv.style.width = '300px';
-    mapPreviewDiv.style.height = '200px';
+    mapPreviewDiv.style.width = '585px';
+    mapPreviewDiv.style.height = '312px';
     mapPreviewDiv.style.background = '#222';
     mapPreviewDiv.style.border = '3px solid #666';
     mapPreviewDiv.style.borderRadius = '14px';
@@ -168,8 +170,8 @@ export function showNewGameDialog(container: HTMLElement): Promise<NewGameDialog
         }
         mapCanvas = Renderer.render(currentMap, [], [], true);
         // Only set style for preview scaling, do not touch attribute width/height
-        mapCanvas.style.width = '300px';
-        mapCanvas.style.height = '200px';
+        mapCanvas.style.width = '585px';
+        mapCanvas.style.height = '312px';
         mapCanvas.style.display = 'block';
         spinner.style.display = 'none';
         mapPreviewDiv.appendChild(mapCanvas);
@@ -210,6 +212,7 @@ export function showNewGameDialog(container: HTMLElement): Promise<NewGameDialog
 
     // Player list state
     let players: PlayerConfig[] = [];
+    let nextColorIdx = 0;
 
     // Emperor name reservoir
     const EMPEROR_NAMES = [
@@ -246,7 +249,7 @@ export function showNewGameDialog(container: HTMLElement): Promise<NewGameDialog
     playerList.style.background = 'rgba(36,40,44,0.93)';
     playerList.style.border = '1px solid #333';
     playerList.style.borderRadius = '8px';
-    playerList.style.maxHeight = '160px';
+    playerList.style.maxHeight = '320px';
     playerList.style.overflowY = 'auto';
     playerList.style.boxShadow = '0 2px 8px rgba(30,32,34,0.10)';
     playerList.style.fontFamily = "'MedievalSharp', 'Times New Roman', serif";
@@ -265,6 +268,16 @@ export function showNewGameDialog(container: HTMLElement): Promise<NewGameDialog
         li.style.padding = '6px 10px';
         li.style.boxShadow = '0 1px 4px rgba(30,32,34,0.09)';
         li.style.fontFamily = "'MedievalSharp', 'Times New Roman', serif";
+        // Player color swatch
+        const colorSwatch = document.createElement('span');
+        colorSwatch.style.display = 'inline-block';
+        colorSwatch.style.width = '18px';
+        colorSwatch.style.height = '18px';
+        colorSwatch.style.borderRadius = '4px';
+        colorSwatch.style.background = p.color;
+        colorSwatch.style.marginRight = '10px';
+        colorSwatch.style.border = '2px solid #222';
+        li.appendChild(colorSwatch);
         // Player name and AI badge
         // Inline editable player name
         const nameSpan = document.createElement('span');
@@ -390,10 +403,17 @@ export function showNewGameDialog(container: HTMLElement): Promise<NewGameDialog
     addHumanBtn.onmouseenter = () => addHumanBtn.style.background = 'linear-gradient(90deg,#185a9d 0%,#43cea2 100%)';
     addHumanBtn.onmouseleave = () => addHumanBtn.style.background = 'linear-gradient(90deg,#43cea2 0%,#185a9d 100%)';
     addHumanBtn.onclick = () => {
+      if (players.length >= 8) return;
       const name = getRandomEmperorName();
-      players.push({ name, isAI: false });
-      updatePlayerList();
-      updateStartBtn();
+      const color = Player.COLORS[nextColorIdx % Player.COLORS.length];
+      const playerConfig = { name, isAI: false, color };
+      // Only add if less than 8
+      if (players.length < 8) {
+        players.push(playerConfig);
+        nextColorIdx++;
+        updatePlayerList();
+        updateStartBtn();
+      }
     };
     btnRow.appendChild(addHumanBtn);
 
@@ -414,10 +434,17 @@ export function showNewGameDialog(container: HTMLElement): Promise<NewGameDialog
     addAIBtn.onmouseenter = () => addAIBtn.style.background = 'linear-gradient(90deg,#ff5e62 0%,#ff9966 100%)';
     addAIBtn.onmouseleave = () => addAIBtn.style.background = 'linear-gradient(90deg,#ff9966 0%,#ff5e62 100%)';
     addAIBtn.onclick = () => {
+      if (players.length >= 8) return;
       const name = getRandomEmperorName() + ' AI';
-      players.push({ name, isAI: true });
-      updatePlayerList();
-      updateStartBtn();
+      const color = Player.COLORS[nextColorIdx % Player.COLORS.length];
+      const playerConfig = { name, isAI: true, color };
+      // Only add if less than 8
+      if (players.length < 8) {
+        players.push(playerConfig);
+        nextColorIdx++;
+        updatePlayerList();
+        updateStartBtn();
+      }
     };
     btnRow.appendChild(addAIBtn);
 

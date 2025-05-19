@@ -189,4 +189,14 @@ export class Game {
     }
     return game;
   }
+
+  /**
+   * Adds a player to the game if there are fewer than 8 players.
+   * Returns true if the player was added, false otherwise.
+   */
+  AddPlayer(player: Player): boolean {
+    if (this.players.length >= 8) return false;
+    this.players.push(player);
+    return true;
+  }
 }

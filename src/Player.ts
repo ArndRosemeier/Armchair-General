@@ -52,7 +52,11 @@ export class Player {
     red: "255,0,0",
     blue: "0,0,255",
     green: "0,128,0",
-    yellow: "255,255,0"
+    yellow: "255,255,0",
+    purple: "128,0,128",
+    orange: "255,140,0",
+    teal: "0,128,128",
+    brown: "139,69,19"
   };
 
   /**
@@ -63,7 +67,10 @@ export class Player {
     return Player.COLOR_RGBS[this.color] || "0,0,0";
   }
 
-  static COLORS = ["red", "blue", "green", "yellow"];
+  static COLORS = [
+    "red", "blue", "green", "yellow",
+    "purple", "orange", "teal", "brown"
+  ];
   name: string;
   color: string;
   ownedCountries: Country[];
