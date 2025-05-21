@@ -13,6 +13,7 @@ import { FishOverlay } from './FishOverlay';
 import { OCEAN } from './WorldMap';
 import { showActionLogDialog } from './ActionLogDialog';
 import { Serializer } from './Serializer';
+import { Country } from './Country';
 
 export class GameGui {
   private state: string;
@@ -117,8 +118,6 @@ export class GameGui {
             <div><b>Owner:</b> ${info.owner ? info.owner.name : 'None'}</div>
             <div><b>Income:</b> <span style="${incomeStyle}">${info.income !== undefined ? info.income : '?'}</span></div>
             <div><b>Army:</b> ${info.army !== undefined ? info.army : '?'}</div>
-            <div><b>Recency:</b> ${info.recency !== undefined ? info.recency : '?'}</div>
-            ${unrestText}
           `;
         }
       }
@@ -139,12 +138,26 @@ export class GameGui {
             const nameStyle = clickedCountry.unrestLevel > 0 ? 'color: red; font-style: italic;' : '';
             const unrestText = clickedCountry.unrestLevel > 0 ? `<div style="color: red; font-style: italic;">Rioting</div>` : '';
             const incomeStyle = clickedCountry.unrestLevel > 0 ? 'color: red; text-decoration: line-through;' : '';
+            // Information status string (no 'Recency:' label)
+            let infoStatusHtml = '';
+            const player = this.currentGame.activePlayer;
+            if (player.armyKnown(clickedCountry)) {
+              infoStatusHtml = '<span style="color: #4caf50; font-weight: bold;">Certified information</span>';
+            } else {
+              const knowledge = player.knowledge.find((k: any) => k.country === clickedCountry);
+              if (clickedCountry.owner && clickedCountry.owner !== player && knowledge) {
+                const turnsOld = this.currentGame.gameTurn - knowledge.gameTurn;
+                infoStatusHtml = `<span style=\"color: #ffd700; font-weight: bold;\">${turnsOld} turn${turnsOld === 1 ? '' : 's'} old information</span>`;
+              } else {
+                infoStatusHtml = '<span style="color: #ff4444; font-weight: bold;">No information</span>';
+              }
+            }
             infoPanel.innerHTML = `
               <div><b>Name:</b> <span style="${nameStyle}">${info.name}</span></div>
               <div><b>Owner:</b> ${info.owner ? info.owner.name : 'None'}</div>
-              <div><b>Income:</b> <span style="${incomeStyle}">${info.income !== undefined ? info.income : '?'}</span></div>
+              <div><b>Income:</b> <span style="${incomeStyle}">${info.income !== undefined ? info.income : '?'} </span></div>
               <div><b>Army:</b> ${info.army !== undefined ? info.army : '?'}</div>
-              <div><b>Recency:</b> ${info.recency !== undefined ? info.recency : '?'}</div>
+              <div>${infoStatusHtml}</div>
               ${unrestText}
             `;
           }
@@ -487,21 +500,26 @@ export class GameGui {
       this.clickedCountryNames = [];
     }
 
-
     // Panel for displaying country info
-    const countryInfoPanel = document.createElement('div');
-    countryInfoPanel.id = 'country-info-panel';
-    countryInfoPanel.style.background = '#a67c52'; // lighter brown
-    countryInfoPanel.style.border = '1px solid #555';
-    countryInfoPanel.style.borderRadius = '8px';
-    countryInfoPanel.style.padding = '10px 12px';
-    countryInfoPanel.style.marginBottom = '18px';
-    countryInfoPanel.style.color = '#b3e5fc';
-    countryInfoPanel.style.fontSize = '1.05rem';
-    countryInfoPanel.style.minHeight = '100px';
-    countryInfoPanel.style.fontFamily = "'MedievalSharp', 'Times New Roman', serif";
-    countryInfoPanel.innerHTML = '<span style="color:#888">Click a country to view details.</span>';
-
+    let mapOverlayPanel = mapArea.querySelector('#country-info-overlay') as HTMLDivElement;
+    if (!mapOverlayPanel) {
+      mapOverlayPanel = document.createElement('div');
+      mapOverlayPanel.id = 'country-info-overlay';
+      mapOverlayPanel.style.position = 'absolute';
+      mapOverlayPanel.style.pointerEvents = 'auto';
+      mapOverlayPanel.style.background = 'rgba(40, 40, 60, 0.85)';
+      mapOverlayPanel.style.border = '1.5px solid #555';
+      mapOverlayPanel.style.borderRadius = '10px';
+      mapOverlayPanel.style.padding = '14px 18px';
+      mapOverlayPanel.style.color = '#b3e5fc';
+      mapOverlayPanel.style.fontSize = '1.08rem';
+      mapOverlayPanel.style.fontFamily = "'MedievalSharp', 'Times New Roman', serif";
+      mapOverlayPanel.style.minWidth = '180px';
+      mapOverlayPanel.style.maxWidth = '320px';
+      mapOverlayPanel.style.display = 'none';
+      mapOverlayPanel.style.zIndex = '20';
+      mapArea.appendChild(mapOverlayPanel);
+    }
 
     if (mapCanvas) {
       // Only set style width/height for display scaling
@@ -558,16 +576,16 @@ export class GameGui {
         const y = Math.floor(e.offsetY * (mapHeight / mapCanvas.clientHeight));
         const map = game.worldMap.getMap();
         const countries = game.worldMap.getCountries();
-        let clickedCountry = null;
+        let clickedCountry: Country | null = null;
         if (x >= 0 && y >= 0 && y < map.length && x < map[0].length) {
           const value = map[y][x];
           if (value >= 0 && countries[value]) {
             clickedCountry = countries[value];
             // Counter check: is (x, y) in clickedCountry.coordinates?
-            if (!clickedCountry.coordinates.some(([cx, cy]: [number, number]) => cx === x && cy === y)) {
+            if (clickedCountry && !clickedCountry.coordinates.some(([cx, cy]: [number, number]) => cx === x && cy === y)) {
               console.warn(`[GameGui] Click at (${x},${y}) is not in coordinates of country: ${clickedCountry.name}`);
             }
-            this.clickedCountryNames.push(clickedCountry.name);
+            if (clickedCountry) this.clickedCountryNames.push(clickedCountry.name);
 
             // --- Draw glow effect ---
             ensureGlowCanvas();
@@ -604,34 +622,48 @@ export class GameGui {
 
             // Update action buttons
             this.updateActionButtons();
-            // Show country info in sidebar
-            const infoPanel = document.getElementById('country-info-panel');
-            if (infoPanel && game && game.activePlayer && typeof game.gameTurn === 'number') {
+            // Show country info as overlay above the country center
+            if (clickedCountry && mapOverlayPanel && game && game.activePlayer && typeof game.gameTurn === 'number') {
               const info = game.activePlayer.getCountryInfo(clickedCountry, game.gameTurn);
-              const nameStyle = clickedCountry.unrestLevel > 0 ? 'color: red; font-style: italic;' : '';
-              const unrestText = clickedCountry.unrestLevel > 0 ? `<div style="color: red; font-style: italic;">Rioting</div>` : '';
-              const incomeStyle = clickedCountry.unrestLevel > 0 ? 'color: red; text-decoration: line-through;' : '';
-              infoPanel.innerHTML = `
+              const nameStyle = clickedCountry.unrestLevel > 0 ? 'color: #ff6666; font-style: italic;' : '';
+              const unrestText = clickedCountry.unrestLevel > 0 ? `<div style=\"color: #ff6666; font-style: italic;\">Rioting</div>` : '';
+              const incomeStyle = clickedCountry.unrestLevel > 0 ? 'color: #ff6666; text-decoration: line-through;' : '';
+              // Information status string (no 'Recency:' label)
+              let infoStatusHtml = '';
+              const player = game.activePlayer;
+              if (player.armyKnown(clickedCountry)) {
+                infoStatusHtml = '<span style="color: #4caf50; font-weight: bold;">Certified information</span>';
+              } else {
+                const knowledge = player.knowledge.find((k: any) => k.country === clickedCountry);
+                if (clickedCountry.owner && clickedCountry.owner !== player && knowledge) {
+                  const turnsOld = game.gameTurn - knowledge.gameTurn;
+                  infoStatusHtml = `<span style=\"color: #ffd700; font-weight: bold;\">${turnsOld} turn${turnsOld === 1 ? '' : 's'} old information</span>`;
+                } else {
+                  infoStatusHtml = '<span style="color: #ff4444; font-weight: bold;">No information</span>';
+                }
+              }
+              mapOverlayPanel.innerHTML = `
                 <div><b>Name:</b> <span style="${nameStyle}">${info.name}</span></div>
                 <div><b>Owner:</b> ${info.owner ? info.owner.name : 'None'}</div>
-                <div><b>Income:</b> <span style="${incomeStyle}">${info.income !== undefined ? info.income : '?'}</span></div>
+                <div><b>Income:</b> <span style="${incomeStyle}">${info.income !== undefined ? info.income : '?'} </span></div>
                 <div><b>Army:</b> ${info.army !== undefined ? info.army : '?'}</div>
-                <div><b>Recency:</b> ${info.recency !== undefined ? info.recency : '?'}</div>
+                <div>${infoStatusHtml}</div>
                 ${unrestText}
               `;
-            }
-            // Show last clicked country info in sidebar
-            const lastClickedCountryInfoPanel = document.getElementById('last-clicked-country-info-panel');
-            if (lastClickedCountryInfoPanel && game && game.activePlayer && typeof game.gameTurn === 'number') {
-              const info = game.activePlayer.getCountryInfo(clickedCountry, game.gameTurn);
-              lastClickedCountryInfoPanel.innerHTML = `
-                <b>Last Clicked Country Info</b><br>
-                <div><b>Name:</b> ${info.name}</div>
-                <div><b>Owner:</b> ${info.owner ? info.owner.name : 'None'}</div>
-                <div><b>Income:</b> ${info.income !== undefined ? info.income : '?'}</div>
-                <div><b>Army:</b> ${info.army !== undefined ? info.army : '?'}</div>
-                <div><b>Recency:</b> ${info.recency !== undefined ? info.recency : '?'}</div>
-              `;
+              // Position overlay above the country center
+              const [cx, cy] = clickedCountry.center ? clickedCountry.center() : [0, 0];
+              // Convert map coords to canvas pixel coords
+              const mapWidth = mapCanvas.width;
+              const mapHeight = mapCanvas.height;
+              const clientRect = mapCanvas.getBoundingClientRect();
+              const scaleX = clientRect.width / mapWidth;
+              const scaleY = clientRect.height / mapHeight;
+              const px = cx * scaleX;
+              const py = cy * scaleY;
+              // Offset overlay above the country center
+              mapOverlayPanel.style.left = `${px - mapOverlayPanel.offsetWidth / 2}px`;
+              mapOverlayPanel.style.top = `${py - mapOverlayPanel.offsetHeight - 18}px`;
+              mapOverlayPanel.style.display = 'block';
             }
           } 
         }
@@ -765,19 +797,6 @@ export class GameGui {
     buttonRow.appendChild(loadGameImg);
     sidebar.appendChild(buttonRow);
 
-    // Add country info panel below
-    sidebar.appendChild(countryInfoPanel);
-
-
-    sidebar.style.flex = '1';
-    sidebar.style.background = '#3b2412'; // deep brown
-    sidebar.style.display = 'flex';
-    sidebar.style.flexDirection = 'column';
-    sidebar.style.padding = '32px 24px';
-    sidebar.style.color = '#fff';
-    sidebar.style.minWidth = '320px';
-    sidebar.style.fontFamily = "'MedievalSharp', 'Times New Roman', serif";
-
     // Game Info
     const gameInfo = document.createElement('div');
     gameInfo.style.marginBottom = '32px';
@@ -903,26 +922,27 @@ export class GameGui {
     actionPanel.style.background = '#a67c52';
     actionPanel.style.border = '1px solid #555';
     actionPanel.style.borderRadius = '8px';
-    actionPanel.style.padding = '16px 12px';
+    actionPanel.style.padding = '20px 24px';
     actionPanel.style.marginTop = 'auto';
     actionPanel.style.marginBottom = '18px';
-    actionPanel.style.minHeight = '120px';
-    // Left: action buttons area (80%)
+    actionPanel.style.minHeight = '140px';
+    actionPanel.style.maxWidth = '480px';
+    // Left: action buttons area (70%)
     const actionsDiv = document.createElement('div');
     actionsDiv.id = 'action-buttons-area';
     actionsDiv.style.display = 'flex';
     actionsDiv.style.flexDirection = 'column';
-    actionsDiv.style.gap = '12px';
-    actionsDiv.style.flex = '0 1 80%';
-    actionsDiv.style.maxWidth = '80%';
-    // Right: advisor image (20%)
+    actionsDiv.style.gap = '16px';
+    actionsDiv.style.flex = '0 1 70%';
+    actionsDiv.style.maxWidth = '70%';
+    // Right: advisor image (30%)
     const advisorDiv = document.createElement('div');
-    advisorDiv.style.flex = '1 1 20%';
+    advisorDiv.style.flex = '1 1 30%';
     advisorDiv.style.display = 'flex';
     advisorDiv.style.alignItems = 'flex-end';
     advisorDiv.style.justifyContent = 'center';
     advisorDiv.style.height = '100%';
-    advisorDiv.style.marginLeft = '12px';
+    advisorDiv.style.marginLeft = '18px';
     const advisorImg = document.createElement('img');
     advisorImg.src = 'Advisor.png';
     advisorImg.alt = 'Advisor';
@@ -959,6 +979,17 @@ export class GameGui {
       }
     };
     sidebar.appendChild(endTurnBtn);
+
+    // Make sidebar wider
+    sidebar.style.flex = '1';
+    sidebar.style.background = '#3b2412'; // deep brown
+    sidebar.style.display = 'flex';
+    sidebar.style.flexDirection = 'column';
+    sidebar.style.padding = '32px 24px';
+    sidebar.style.color = '#fff';
+    sidebar.style.minWidth = '420px';
+    sidebar.style.maxWidth = '520px';
+    sidebar.style.fontFamily = "'MedievalSharp', 'Times New Roman', serif";
 
     // Assemble
     wrapper.appendChild(mapArea);
