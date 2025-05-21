@@ -172,7 +172,11 @@ export class Player {
    * Returns the total income from all owned countries.
    */
   totalIncome(): number {
-    return this.ownedCountries.reduce((sum, country) => sum + (country.income ?? 0), 0);
+    return this.ownedCountries.reduce((sum, country) => {
+      // Skip countries with unrest level > 0
+      if (country.unrestLevel > 0) return sum;
+      return sum + (country.income ?? 0);
+    }, 0);
   }
 
   /**

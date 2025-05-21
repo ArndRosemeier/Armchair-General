@@ -260,7 +260,7 @@ export class CountryGenerator {
    * @param countries Array of Country instances
    * @param minSize Minimum size threshold (default 1000)
    */
-  static mergeSmallCountries(countries: Country[], minSize: number = 1000): void {
+  static mergeSmallCountries(countries: Country[], minSize: number = 1000, map?: number[][]): void {
     let changed = true;
     while (changed) {
       changed = false;
@@ -276,6 +276,12 @@ export class CountryGenerator {
           }
           // Merge this country into smallestNeighbor
           smallestNeighbor.coordinates.push(...country.coordinates);
+          // Update the map so all merged pixels now belong to smallestNeighbor
+          if (map && (smallestNeighbor as any).id !== undefined && (country as any).id !== undefined) {
+            for (const [x, y] of country.coordinates) {
+              map[y][x] = (smallestNeighbor as any).id;
+            }
+          }
           // Remove the merged country from the countries array
           countries.splice(i, 1);
           changed = true;
@@ -284,6 +290,7 @@ export class CountryGenerator {
       // After any merge, update neighbors
       if (changed) {
         this.findNeighbors(countries);
+        console.log("Merged countries");
       }
     }
   }
@@ -310,7 +317,7 @@ export class CountryGenerator {
 
     // 3. Merge small countries
     const minSize = options?.minCountrySize ?? 1000;
-    this.mergeSmallCountries(countries, minSize);
+    this.mergeSmallCountries(countries, minSize, map);
 
     // 4. Recompute borders after merge
     if (!map || map.length === 0 || !map[0]) {

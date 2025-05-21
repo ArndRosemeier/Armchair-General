@@ -11,6 +11,8 @@ export class Country {
   neighbors: Country[];
   color: [number, number, number];
   fortified: boolean = false;
+  nationalPride: number;
+  unrestLevel: number = 0;
   private _center: [number, number] | null = null;
 
   constructor(name: string, owner: Player | null = null, armies: number = 0, income: number = 0) {
@@ -28,6 +30,12 @@ export class Country {
       Math.floor(80 + Math.random() * 150), // G
       Math.floor(80 + Math.random() * 150)  // B
     ];
+    // Initialize nationalPride with bias towards lower values using random multiplication
+    const min = 1000;
+    const max = 100000;
+    const random = Math.random() * Math.random(); // Multiply three random numbers for heavy bias towards lower values
+    this.nationalPride = Math.floor(min + (max - min) * random);
+    this.unrestLevel = 0;
   }
 
   setOwner(player: Player) {
@@ -79,7 +87,9 @@ export class Country {
       oceanBorder: this.oceanBorder,
       neighborIds: this.neighbors.map(n => n.name),
       color: this.color,
-      fortified: this.fortified
+      fortified: this.fortified,
+      nationalPride: this.nationalPride,
+      unrestLevel: this.unrestLevel
     };
   }
 
@@ -96,6 +106,8 @@ export class Country {
     c.oceanBorder = data.oceanBorder;
     c.color = data.color;
     c.fortified = data.fortified;
+    c.nationalPride = data.nationalPride ?? 1000;
+    c.unrestLevel = data.unrestLevel ?? 0;
     // owner and neighbors will be resolved after all countries/players are created
     // Store for later resolution
     (c as any)._ownerId = data.ownerId;

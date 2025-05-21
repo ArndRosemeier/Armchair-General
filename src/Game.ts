@@ -53,6 +53,7 @@ export class Game {
     this.activePlayerIndex = (this.activePlayerIndex + 1) % this.players.length;
     if (this.activePlayerIndex === 0) {
       this.gameTurn++;
+      this.handleUnrest();
     }
     // Process planned fortifications for the new active player
     const player = this.activePlayer;
@@ -198,5 +199,99 @@ export class Game {
     if (this.players.length >= 8) return false;
     this.players.push(player);
     return true;
+  }
+
+  /**
+   * Generates a random emperor name for AI players.
+   * Uses a reservoir of historical emperor names.
+   */
+  private static generateAIName(): string {
+    const EMPEROR_NAMES = [
+      'Augustus', 'Charlemagne', 'Qin Shi Huang', 'Akbar', 'Justinian',
+      'Napoleon', 'Constantine', 'Ashoka', 'Catherine', 'Meiji',
+      'Trajan', 'Hadrian', 'Aurangzeb', 'Elizabeth', 'Peter',
+      'Victoria', 'Franz Joseph', 'Wilhelm', 'Haile Selassie', 'Menelik'
+    ];
+    return EMPEROR_NAMES[Math.floor(Math.random() * EMPEROR_NAMES.length)];
+  }
+
+  /**
+   * Handles unrest in countries based on their national pride and current army count.
+   * Countries with high unrest may rebel and form new AI-controlled nations.
+   */
+  handleUnrest() {
+    for (const country of this.worldMap.getCountries()) {
+      if (!country.owner) continue; // Skip unowned countries
+
+      // Roll a dice between 1000 and 100000
+      const diceRoll = Math.floor(Math.random() * 99000) + 1000;
+      const totalValue = diceRoll + country.armies;
+
+      // Update unrest level based on comparison with national pride
+      if (totalValue < country.nationalPride) {
+        country.unrestLevel = Math.min(country.unrestLevel + 1, 2);
+        country.nationalPride = Math.min(country.nationalPride + 1000, 100000);
+      } else {
+        country.unrestLevel = Math.max(country.unrestLevel - 1, 0);
+        country.nationalPride = Math.max(country.nationalPride - 1000, 1000);
+      }
+
+      // Handle rebellion if unrest level reaches 2
+      if (country.unrestLevel === 2) {
+        // Create new AI player
+        const newPlayer = new Player(
+          Game.generateAIName(),
+          Player.COLORS[this.players.length % Player.COLORS.length],
+          [],
+          null,
+          [],
+          0,
+          true
+        );
+
+        // Try to add the player
+        if (this.AddPlayer(newPlayer)) {
+          // Remove country from old owner's owned countries
+          const oldOwner = country.owner;
+          if (oldOwner) {
+            oldOwner.ownedCountries = oldOwner.ownedCountries.filter(c => c !== country);
+          }
+          this.UnKnowCountry(country);
+          country.nationalPride = 1000;
+          country.unrestLevel = 0;
+          country.income *= 2;
+          // Set up new player
+          newPlayer.homeCountry = country;
+          newPlayer.ownedCountries.push(country);
+          country.owner = newPlayer;
+          country.armies = country.nationalPride * 2;
+          country.fortified = true;
+
+          // Initialize AI
+          newPlayer.game = this;
+          newPlayer.AI = new AI(newPlayer, this);
+        } else {
+          // If AddPlayer fails, make the country unowned
+          const oldOwner = country.owner;
+          if (oldOwner) {
+            oldOwner.ownedCountries = oldOwner.ownedCountries.filter(c => c !== country);
+          }
+          this.UnKnowCountry(country);
+          country.owner = null;
+          country.armies = country.nationalPride;
+          country.fortified = false;
+        }
+      }
+    }
+  }
+
+  /**
+   * Removes a country from all players' knowledge.
+   * @param country The country to remove from knowledge
+   */
+  UnKnowCountry(country: Country) {
+    for (const player of this.players) {
+      player.knowledge = player.knowledge.filter(k => k.country !== country);
+    }
   }
 }

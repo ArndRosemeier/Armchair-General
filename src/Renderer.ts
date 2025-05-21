@@ -120,8 +120,16 @@ export class Renderer {
       const shouldHighlight = highlightCountries.some(c => c === country);
       
       // Draw text with appropriate color - light green for highlighted countries, white for others
-      ctx.fillStyle = shouldHighlight ? '#90EE90' : 'white';  // Light green for highlighted countries
-      ctx.fillText(displayName, cx, cy);
+      // If unrest level > 0, use red and italics for the name
+      if (country.unrestLevel > 0) {
+        ctx.font = 'italic bold 10px MedievalSharp, Verdana, serif';
+        ctx.fillStyle = '#FF0000';  // Red for unrest
+        ctx.fillText(displayName, cx, cy);
+      } else {
+        ctx.font = 'bold 10px MedievalSharp, Verdana, serif';
+        ctx.fillStyle = shouldHighlight ? '#90EE90' : 'white';  // Light green for highlighted countries
+        ctx.fillText(displayName, cx, cy);
+      }
       // --- Army display logic ---
       let showArmy = false;
       if (showArmies) {
@@ -131,16 +139,24 @@ export class Renderer {
       } else if (currentPlayer && typeof currentPlayer.armyKnown === 'function' && currentPlayer.armyKnown(country) && !currentPlayer.isAI) {
         showArmy = true;
       }
+      let nextYOffset = 13;
       if (showArmy) {
         const armies = country.armies || 0;
         const armiesText = `${Math.round(armies / 1000)}k`;
         ctx.font = 'bold 9px MedievalSharp, Verdana, serif';
         ctx.lineWidth = 2;
         ctx.strokeStyle = 'black';
-        ctx.strokeText(armiesText, cx, cy + 13);
+        ctx.strokeText(armiesText, cx, cy + nextYOffset);
         ctx.fillStyle = '#FFD700'; // gold/yellow for armies
-        ctx.fillText(armiesText, cx, cy + 13);
+        ctx.fillText(armiesText, cx, cy + nextYOffset);
         ctx.font = 'bold 10px MedievalSharp, Verdana, serif'; // restore font
+        nextYOffset += 13;
+      }
+      if (country.unrestLevel > 0) {
+        ctx.font = 'italic bold 8px MedievalSharp, Verdana, serif';
+        ctx.strokeText('Rioting', cx, cy + nextYOffset);
+        ctx.fillStyle = '#FF0000';
+        ctx.fillText('Rioting', cx, cy + nextYOffset);
       }
     }
     ctx.restore();

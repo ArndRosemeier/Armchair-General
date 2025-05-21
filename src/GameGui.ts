@@ -109,12 +109,16 @@ export class GameGui {
         const info = this.currentGame.activePlayer.getCountryInfo(clickedCountry, this.currentGame.gameTurn);
         const infoPanel = document.getElementById('country-info-panel');
         if (infoPanel) {
+          const nameStyle = clickedCountry.unrestLevel > 0 ? 'color: red; font-style: italic;' : '';
+          const unrestText = clickedCountry.unrestLevel > 0 ? `<div style="color: red; font-style: italic;">Rioting</div>` : '';
+          const incomeStyle = clickedCountry.unrestLevel > 0 ? 'color: red; text-decoration: line-through;' : '';
           infoPanel.innerHTML = `
-            <div><b>Name:</b> ${info.name}</div>
+            <div><b>Name:</b> <span style="${nameStyle}">${info.name}</span></div>
             <div><b>Owner:</b> ${info.owner ? info.owner.name : 'None'}</div>
-            <div><b>Income:</b> ${info.income !== undefined ? info.income : '?'}</div>
+            <div><b>Income:</b> <span style="${incomeStyle}">${info.income !== undefined ? info.income : '?'}</span></div>
             <div><b>Army:</b> ${info.army !== undefined ? info.army : '?'}</div>
             <div><b>Recency:</b> ${info.recency !== undefined ? info.recency : '?'}</div>
+            ${unrestText}
           `;
         }
       }
@@ -132,12 +136,16 @@ export class GameGui {
           const info = this.currentGame.activePlayer.getCountryInfo(clickedCountry, this.currentGame.gameTurn);
           const infoPanel = document.getElementById('country-info-panel');
           if (infoPanel) {
+            const nameStyle = clickedCountry.unrestLevel > 0 ? 'color: red; font-style: italic;' : '';
+            const unrestText = clickedCountry.unrestLevel > 0 ? `<div style="color: red; font-style: italic;">Rioting</div>` : '';
+            const incomeStyle = clickedCountry.unrestLevel > 0 ? 'color: red; text-decoration: line-through;' : '';
             infoPanel.innerHTML = `
-              <div><b>Name:</b> ${info.name}</div>
+              <div><b>Name:</b> <span style="${nameStyle}">${info.name}</span></div>
               <div><b>Owner:</b> ${info.owner ? info.owner.name : 'None'}</div>
-              <div><b>Income:</b> ${info.income !== undefined ? info.income : '?'}</div>
+              <div><b>Income:</b> <span style="${incomeStyle}">${info.income !== undefined ? info.income : '?'}</span></div>
               <div><b>Army:</b> ${info.army !== undefined ? info.army : '?'}</div>
               <div><b>Recency:</b> ${info.recency !== undefined ? info.recency : '?'}</div>
+              ${unrestText}
             `;
           }
         }
@@ -600,12 +608,16 @@ export class GameGui {
             const infoPanel = document.getElementById('country-info-panel');
             if (infoPanel && game && game.activePlayer && typeof game.gameTurn === 'number') {
               const info = game.activePlayer.getCountryInfo(clickedCountry, game.gameTurn);
+              const nameStyle = clickedCountry.unrestLevel > 0 ? 'color: red; font-style: italic;' : '';
+              const unrestText = clickedCountry.unrestLevel > 0 ? `<div style="color: red; font-style: italic;">Rioting</div>` : '';
+              const incomeStyle = clickedCountry.unrestLevel > 0 ? 'color: red; text-decoration: line-through;' : '';
               infoPanel.innerHTML = `
-                <div><b>Name:</b> ${info.name}</div>
+                <div><b>Name:</b> <span style="${nameStyle}">${info.name}</span></div>
                 <div><b>Owner:</b> ${info.owner ? info.owner.name : 'None'}</div>
-                <div><b>Income:</b> ${info.income !== undefined ? info.income : '?'}</div>
+                <div><b>Income:</b> <span style="${incomeStyle}">${info.income !== undefined ? info.income : '?'}</span></div>
                 <div><b>Army:</b> ${info.army !== undefined ? info.army : '?'}</div>
                 <div><b>Recency:</b> ${info.recency !== undefined ? info.recency : '?'}</div>
+                ${unrestText}
               `;
             }
             // Show last clicked country info in sidebar

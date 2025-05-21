@@ -353,7 +353,8 @@ export class AI {
       const amount = Math.min(needed, affordable, 100000);
       const roundedAmount = Math.floor(amount / 1000) * 1000;
       if (roundedAmount > 0) {
-        const score = (avgArmy - weakest.armies) / 1000;
+        let score = (avgArmy - weakest.armies) / 1000;
+        if (weakest.unrestLevel > 0) score += 10;
         opportunities.push(new Opportunity([weakest], roundedAmount, action, score));
       }
     }
