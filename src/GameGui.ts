@@ -162,6 +162,46 @@ export class GameGui {
             `;
           }
         }
+        // --- Show country info overlay and action panel for the last used country (simulate click) ---
+        // Find the last country used in the last action (if any)
+        if (this.currentGame.activePlayer && this.currentGame.activePlayer.actionLog.length > 0) {
+          const lastAction = this.currentGame.activePlayer.actionLog[this.currentGame.activePlayer.actionLog.length - 1];
+          if (lastAction.countries && lastAction.countries.length > 0) {
+            const lastCountry = lastAction.countries[lastAction.countries.length - 1];
+            if (lastCountry && lastCountry.name) {
+              // Set as last clicked
+              this.clickedCountryNames.push(lastCountry.name);
+              // Simulate click: show overlays for this country
+              // Find the map area and canvas
+              const mapArea = this.rootContainer.querySelector('div[style*="flex: 3"]');
+              const mapCanvas = mapArea ? mapArea.querySelector('canvas') : null;
+              if (mapCanvas && mapArea) {
+                // Find the country object by name
+                const countries = this.currentGame.worldMap.getCountries();
+                const country = countries.find((c: any) => c.name === lastCountry.name);
+                if (country) {
+                  // Calculate center in client coordinates
+                  const [cx, cy] = country.center ? country.center() : [0, 0];
+                  const mapWidth = mapCanvas.width;
+                  const mapHeight = mapCanvas.height;
+                  const clientRect = mapCanvas.getBoundingClientRect();
+                  const scaleX = clientRect.width / mapWidth;
+                  const scaleY = clientRect.height / mapHeight;
+                  const px = cx * scaleX;
+                  const py = cy * scaleY;
+                  // Create a synthetic MouseEvent at the country center
+                  const evt = new MouseEvent('mousedown', {
+                    bubbles: true,
+                    cancelable: true,
+                    clientX: clientRect.left + px,
+                    clientY: clientRect.top + py
+                  });
+                  mapCanvas.dispatchEvent(evt);
+                }
+              }
+            }
+          }
+        }
       }
     }
     this.updateActionButtons();
@@ -172,44 +212,29 @@ export class GameGui {
    */
   updateActionButtons() {
     if (this.paused) return;
+    // Remove old floating action panel if it exists
+    const mapArea = document.querySelector('div[style*="flex: 3"]');
+    let actionOverlayPanel = mapArea ? mapArea.querySelector('#country-action-overlay') as HTMLDivElement : null;
+    if (actionOverlayPanel) {
+      actionOverlayPanel.remove();
+      actionOverlayPanel = null;
+    }
+    // Sidebar action buttons area (keep persistent buttons only)
     const actionsDiv = document.getElementById('action-buttons-area');
-    if (!actionsDiv) return;
-    // Remove only previously generated action buttons, keep persistent ones
-    const persistentButtons: HTMLElement[] = [];
-    Array.from(actionsDiv.children).forEach(child => {
-      if (!(child instanceof HTMLElement)) return;
-      if (child.classList.contains('persistent-action-btn')) {
-        // Always keep persistent buttons (like New Game)
-        persistentButtons.push(child);
-        // Always enable New Game button
-        if (child.textContent && child.textContent.trim() === 'New Game') {
-          (child as HTMLButtonElement).disabled = false;
+    if (actionsDiv) {
+      Array.from(actionsDiv.children).forEach(child => {
+        if (!(child instanceof HTMLElement)) return;
+        if (!child.classList.contains('persistent-action-btn')) {
+          actionsDiv.removeChild(child);
         }
-      } else {
-        actionsDiv.removeChild(child);
-      }
-    });
+      });
+    }
     if (!this.currentGame || !this.currentGame.players || !this.currentGame.activePlayer) return;
     const countries = this.currentGame.worldMap ? this.currentGame.worldMap.getCountries() : [];
     // Get clicked country objects by name
     const clickedCountries = this.clickedCountryNames.map(name => countries.find((c: any) => c.name === name)).filter(Boolean);
-
-    // If no actions left, show warning and return
-    if (this.currentGame.activePlayer.actionsLeft <= 0) {
-      const warning = document.createElement('div');
-      warning.textContent = 'You are out of actions for this turn!';
-      warning.style.background = 'linear-gradient(90deg,#ff5e62 0%,#ff9966 100%)';
-      warning.style.color = '#fff';
-      warning.style.fontSize = '1.5rem';
-      warning.style.fontWeight = 'bold';
-      warning.style.padding = '32px 0';
-      warning.style.borderRadius = '12px';
-      warning.style.textAlign = 'center';
-      warning.style.margin = '24px 0';
-      actionsDiv.appendChild(warning);
-      return;
-    }
-
+    // If no actions left or no country selected, do not show floating panel
+    if (this.currentGame.activePlayer.actionsLeft <= 0 || clickedCountries.length === 0 || !mapArea) return;
     // Create dynamic action buttons
     const dynamicButtons: HTMLElement[] = [];
     for (const action of this.actions) {
@@ -217,16 +242,19 @@ export class GameGui {
       if (buttonText) {
         const btn = document.createElement('button');
         btn.textContent = buttonText;
-        btn.style.padding = '12px 0';
-        btn.style.fontSize = '1.1rem';
-        btn.style.background = 'linear-gradient(90deg,#00c3ff 0%,#ffff1c 100%)';
-        btn.style.color = '#222';
-        btn.style.border = 'none';
-        btn.style.borderRadius = '8px';
+        btn.style.padding = '4px 10px';
+        btn.style.fontSize = '0.95rem';
+        btn.style.background = 'rgba(0,0,0,0.18)';
+        btn.style.color = '#b3e5fc';
+        btn.style.border = '1px solid #555';
+        btn.style.borderRadius = '6px';
         btn.style.cursor = 'pointer';
-        btn.style.boxShadow = '0 2px 8px rgba(30,32,34,0.13)';
-        btn.style.marginBottom = '8px';
+        btn.style.boxShadow = '0 1px 4px rgba(30,32,34,0.10)';
+        btn.style.margin = '0 6px 0 0';
         btn.style.fontFamily = "'MedievalSharp', 'Times New Roman', serif";
+        btn.style.transition = 'background 0.15s, color 0.15s';
+        btn.onmouseenter = () => { btn.style.background = '#ffd700'; btn.style.color = '#222'; };
+        btn.onmouseleave = () => { btn.style.background = 'rgba(0,0,0,0.18)'; btn.style.color = '#b3e5fc'; };
         btn.onclick = async () => {
           const amountRange = action.RequiresAmount(clickedCountries, this.currentGame.activePlayer, this.currentGame);
           let result: string | null = null;
@@ -236,7 +264,6 @@ export class GameGui {
             let initial = max;
             if (this.currentGame && this.currentGame.advisedOpportunity) {
               const opp = this.currentGame.advisedOpportunity;
-              // Debug: check for duplicate country instances
               const worldCountries = this.currentGame.worldMap.getCountries();
               for (const c of opp.countries) {
                 const byName = worldCountries.find((wc: any) => wc.name === c.name);
@@ -244,7 +271,6 @@ export class GameGui {
                   console.warn('[Advisor/Action] Country instance mismatch:', c.name, c, byName);
                 }
               }
-              // Check if action and countries match
               const sameAction = opp.action.Type() === action.Type();
               const sameCountries = opp.countries.length === clickedCountries.length && opp.countries.every((c: any, i: number) => c === clickedCountries[i]);
               if (sameAction && sameCountries) {
@@ -258,7 +284,6 @@ export class GameGui {
           } else {
             result = await action.Act(clickedCountries, this.currentGame.activePlayer, this.currentGame);
           }
-          // Log the action
           const usedCountries = clickedCountries.slice(-action.countryCountNeeded);
           this.currentGame.activePlayer.actionLog.push({
             actionType: action.Type(),
@@ -266,7 +291,6 @@ export class GameGui {
             amount: amountUsed,
             result: result ?? null
           });
-          // Decrement action count
           this.currentGame.activePlayer.useAction();
           if (typeof result === 'string' && result !== null) {
             this.afterAction();
@@ -274,23 +298,81 @@ export class GameGui {
           } else {
             this.afterAction();
           }
-          // Clear advised opportunity when an action is performed (at the end)
           if (this.currentGame) this.currentGame.advisedOpportunity = null;
         };
-
         dynamicButtons.push(btn);
       }
     }
-    // Insert dynamic buttons above persistent ones
-    if (dynamicButtons.length && persistentButtons.length) {
-      // Add a gap before persistent buttons
-      const gap = document.createElement('div');
-      gap.style.height = '16px';
-      gap.style.width = '100%';
-      actionsDiv.insertBefore(gap, persistentButtons[0]);
-      dynamicButtons.forEach(btn => actionsDiv.insertBefore(btn, gap));
-    } else if (dynamicButtons.length) {
-      dynamicButtons.forEach(btn => actionsDiv.appendChild(btn));
+    if (dynamicButtons.length > 0) {
+      // Create floating panel
+      actionOverlayPanel = document.createElement('div');
+      actionOverlayPanel.id = 'country-action-overlay';
+      actionOverlayPanel.style.position = 'absolute';
+      actionOverlayPanel.style.pointerEvents = 'auto';
+      actionOverlayPanel.style.background = 'rgba(40, 40, 60, 0.85)';
+      actionOverlayPanel.style.border = '1.5px solid #555';
+      actionOverlayPanel.style.borderRadius = '10px';
+      actionOverlayPanel.style.padding = '12px 18px';
+      actionOverlayPanel.style.color = '#b3e5fc';
+      actionOverlayPanel.style.fontSize = '0.95rem';
+      actionOverlayPanel.style.fontFamily = "'MedievalSharp', 'Times New Roman', serif";
+      actionOverlayPanel.style.display = 'flex';
+      actionOverlayPanel.style.flexDirection = 'column';
+      actionOverlayPanel.style.alignItems = 'center';
+      actionOverlayPanel.style.justifyContent = 'center';
+      actionOverlayPanel.style.gap = '10px';
+      actionOverlayPanel.style.zIndex = '21';
+      actionOverlayPanel.style.minWidth = '140px';
+      actionOverlayPanel.style.maxWidth = '340px';
+      actionOverlayPanel.style.visibility = 'hidden';
+      actionOverlayPanel.style.flexWrap = 'wrap';
+      actionOverlayPanel.style.maxWidth = '340px';
+      actionOverlayPanel.style.minHeight = 'unset';
+      dynamicButtons.forEach(btn => {
+        btn.style.width = '100%';
+        btn.style.margin = '0';
+        btn.style.textAlign = 'center';
+        btn.style.background = '#b3e5fc';
+        btn.style.color = '#1a237e';
+        btn.onmouseenter = () => { btn.style.background = '#ffd700'; btn.style.color = '#222'; };
+        btn.onmouseleave = () => { btn.style.background = '#b3e5fc'; btn.style.color = '#1a237e'; };
+        actionOverlayPanel!.appendChild(btn);
+      });
+      mapArea.appendChild(actionOverlayPanel!);
+      // Position below the country info overlay using the same logic as info overlay
+      const mapCanvas = mapArea.querySelector('canvas');
+      if (mapCanvas && clickedCountries.length === 1) {
+        const country = clickedCountries[0];
+        const [cx, cy] = country.center ? country.center() : [0, 0];
+        const mapWidth = mapCanvas.width;
+        const mapHeight = mapCanvas.height;
+        const clientRect = mapCanvas.getBoundingClientRect();
+        const scaleX = clientRect.width / mapWidth;
+        const scaleY = clientRect.height / mapHeight;
+        const px = cx * scaleX;
+        const py = cy * scaleY;
+        // Get info overlay height if present
+        const infoOverlay = mapArea.querySelector('#country-info-overlay') as HTMLDivElement;
+        // Ensure info overlay is visible and positioned first
+        if (infoOverlay && infoOverlay.style.display !== 'none') {
+          // Use requestAnimationFrame to ensure layout is updated
+          requestAnimationFrame(() => {
+            // Now both overlays should have correct sizes
+            const infoHeight = infoOverlay.offsetHeight;
+            actionOverlayPanel!.style.left = `${px - actionOverlayPanel!.offsetWidth / 2}px`;
+            actionOverlayPanel!.style.top = `${py + infoHeight + 2}px`;
+            actionOverlayPanel!.style.visibility = 'visible';
+            actionOverlayPanel!.style.flexWrap = 'wrap';
+            actionOverlayPanel!.style.maxWidth = '340px';
+            actionOverlayPanel!.style.minHeight = 'unset';
+          });
+        } else {
+          // Fallback: just use country center
+          actionOverlayPanel!.style.left = `${px - actionOverlayPanel!.offsetWidth / 2}px`;
+          actionOverlayPanel!.style.top = `${py + 8}px`;
+          actionOverlayPanel!.style.visibility = 'visible';
+        }
+      }
     }
   }
 
@@ -620,8 +702,6 @@ export class GameGui {
               }
             }
 
-            // Update action buttons
-            this.updateActionButtons();
             // Show country info as overlay above the country center
             if (clickedCountry && mapOverlayPanel && game && game.activePlayer && typeof game.gameTurn === 'number') {
               const info = game.activePlayer.getCountryInfo(clickedCountry, game.gameTurn);
@@ -664,6 +744,136 @@ export class GameGui {
               mapOverlayPanel.style.left = `${px - mapOverlayPanel.offsetWidth / 2}px`;
               mapOverlayPanel.style.top = `${py - mapOverlayPanel.offsetHeight - 18}px`;
               mapOverlayPanel.style.display = 'block';
+
+              // --- Floating action panel logic moved here ---
+              requestAnimationFrame(() => {
+                // Remove old floating action panel if it exists
+                const mapArea = document.querySelector('div[style*="flex: 3"]');
+                let actionOverlayPanel = mapArea ? mapArea.querySelector('#country-action-overlay') as HTMLDivElement : null;
+                if (actionOverlayPanel) {
+                  actionOverlayPanel.remove();
+                  actionOverlayPanel = null;
+                }
+                // Only show if actions left and a country is selected
+                if (!game.activePlayer || game.activePlayer.actionsLeft <= 0 || !clickedCountry) return;
+                // Use all selected countries
+                const countries = game.worldMap.getCountries();
+                const clickedCountries = this.clickedCountryNames
+                  .map(name => countries.find((c: any) => c.name === name))
+                  .filter(Boolean);
+                if (clickedCountries.length === 0) return;
+                // Create dynamic action buttons
+                const dynamicButtons: HTMLElement[] = [];
+                for (const action of this.actions) {
+                  const buttonText = action.GetButtonText(clickedCountries, game.activePlayer);
+                  if (buttonText) {
+                    const btn = document.createElement('button');
+                    btn.textContent = buttonText;
+                    btn.style.padding = '4px 10px';
+                    btn.style.fontSize = '0.95rem';
+                    btn.style.background = 'rgba(0,0,0,0.18)';
+                    btn.style.color = '#b3e5fc';
+                    btn.style.border = '1px solid #555';
+                    btn.style.borderRadius = '6px';
+                    btn.style.cursor = 'pointer';
+                    btn.style.boxShadow = '0 1px 4px rgba(30,32,34,0.10)';
+                    btn.style.margin = '0 6px 0 0';
+                    btn.style.fontFamily = "'MedievalSharp', 'Times New Roman', serif";
+                    btn.style.transition = 'background 0.15s, color 0.15s';
+                    btn.onmouseenter = () => { btn.style.background = '#ffd700'; btn.style.color = '#222'; };
+                    btn.onmouseleave = () => { btn.style.background = 'rgba(0,0,0,0.18)'; btn.style.color = '#b3e5fc'; };
+                    btn.onclick = async () => {
+                      if (clickedCountries.length === 0) return;
+                      const amountRange = action.RequiresAmount(clickedCountries, game.activePlayer, game);
+                      let result: string | null = null;
+                      let amountUsed = 0;
+                      if (amountRange) {
+                        const [min, max] = amountRange;
+                        let initial = max;
+                        if (game && game.advisedOpportunity) {
+                          const opp = game.advisedOpportunity;
+                          const worldCountries = game.worldMap.getCountries();
+                          for (const c of opp.countries) {
+                            const byName = worldCountries.find((wc: any) => wc.name === c.name);
+                            if (byName && byName !== c) {
+                              console.warn('[Advisor/Action] Country instance mismatch:', c.name, c, byName);
+                            }
+                          }
+                          const sameAction = opp.action.Type() === action.Type();
+                          const sameCountries = opp.countries.length === clickedCountries.length && opp.countries.every((c: any, i: number) => c === clickedCountries[i]);
+                          if (sameAction && sameCountries) {
+                            initial = opp.amount;
+                          }
+                        }
+                        const selected = await showAmountDialog(min, max, initial);
+                        if (selected === null) return; // Cancelled
+                        amountUsed = selected;
+                        result = await action.Act(clickedCountries, game.activePlayer, game, selected);
+                      } else {
+                        result = await action.Act(clickedCountries, game.activePlayer, game);
+                      }
+                      game.activePlayer.actionLog.push({
+                        actionType: action.Type(),
+                        countries: clickedCountries,
+                        amount: amountUsed,
+                        result: result ?? null
+                      });
+                      game.activePlayer.useAction();
+                      if (typeof result === 'string' && result !== null) {
+                        this.afterAction();
+                        this.showActionResult(result);
+                      } else {
+                        this.afterAction();
+                      }
+                      if (game) game.advisedOpportunity = null;
+                    };
+                    dynamicButtons.push(btn);
+                  }
+                }
+                if (dynamicButtons.length > 0 && mapArea && clickedCountry) {
+                  actionOverlayPanel = document.createElement('div');
+                  actionOverlayPanel.id = 'country-action-overlay';
+                  actionOverlayPanel.style.position = 'absolute';
+                  actionOverlayPanel.style.pointerEvents = 'auto';
+                  actionOverlayPanel.style.background = 'rgba(40, 40, 60, 0.85)';
+                  actionOverlayPanel.style.border = '1.5px solid #555';
+                  actionOverlayPanel.style.borderRadius = '10px';
+                  actionOverlayPanel.style.padding = '12px 18px';
+                  actionOverlayPanel.style.color = '#b3e5fc';
+                  actionOverlayPanel.style.fontSize = '0.95rem';
+                  actionOverlayPanel.style.fontFamily = "'MedievalSharp', 'Times New Roman', serif";
+                  actionOverlayPanel.style.display = 'flex';
+                  actionOverlayPanel.style.flexDirection = 'column';
+                  actionOverlayPanel.style.alignItems = 'center';
+                  actionOverlayPanel.style.justifyContent = 'center';
+                  actionOverlayPanel.style.gap = '10px';
+                  actionOverlayPanel.style.zIndex = '21';
+                  actionOverlayPanel.style.minWidth = '140px';
+                  actionOverlayPanel.style.maxWidth = '340px';
+                  actionOverlayPanel.style.visibility = 'hidden';
+                  actionOverlayPanel.style.flexWrap = 'wrap';
+                  actionOverlayPanel.style.maxWidth = '340px';
+                  actionOverlayPanel.style.minHeight = 'unset';
+                  dynamicButtons.forEach(btn => {
+                    btn.style.width = '100%';
+                    btn.style.margin = '0';
+                    btn.style.textAlign = 'center';
+                    btn.style.background = '#b3e5fc';
+                    btn.style.color = '#1a237e';
+                    btn.onmouseenter = () => { btn.style.background = '#ffd700'; btn.style.color = '#222'; };
+                    btn.onmouseleave = () => { btn.style.background = '#b3e5fc'; btn.style.color = '#1a237e'; };
+                    actionOverlayPanel!.appendChild(btn);
+                  });
+                  mapArea.appendChild(actionOverlayPanel!);
+                  // Position below the info overlay
+                  actionOverlayPanel!.style.left = `${mapOverlayPanel.offsetLeft}px`;
+                  actionOverlayPanel!.style.top = `${mapOverlayPanel.offsetTop + mapOverlayPanel.offsetHeight + 2}px`;
+                  actionOverlayPanel!.style.visibility = 'visible';
+                  actionOverlayPanel!.style.flexWrap = 'wrap';
+                  actionOverlayPanel!.style.maxWidth = '340px';
+                  actionOverlayPanel!.style.minHeight = 'unset';
+                }
+              });
             }
           } 
         }
