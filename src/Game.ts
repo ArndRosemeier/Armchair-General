@@ -134,6 +134,7 @@ export class Game {
       players[i].ownedCountries.push(home);
       home.income = Game.homeCountryIncome;
       home.fortified = true;
+      home.nationalPride = 1000;
     }
     // Initialize army sizes
     for (const country of worldMap.getCountries()) {
