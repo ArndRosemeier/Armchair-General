@@ -22,7 +22,7 @@ export class GameGui {
   public canceled: boolean = false;
   private paused: boolean = false;
 
-  // List of all clicked country names
+  // Stores a history of all clicked country names (not just the currently relevant ones for an action).
   private clickedCountryNames: string[] = [];
 
   // Cached rendered world map
@@ -101,6 +101,8 @@ export class GameGui {
    * Refreshes the country info panel for the last clicked country and forces a redraw of the world map.
    */
   afterAction() {
+    console.log('[afterAction] isProcessingAdvisorSynthetic:', this.isProcessingAdvisorSynthetic, 'this:', this);
+    console.trace('[afterAction] call stack');
     // Refresh country info panel for the last clicked country
     if (this.clickedCountryNames.length > 0 && this.currentGame && this.currentGame.worldMap) {
       const lastCountryName = this.clickedCountryNames[this.clickedCountryNames.length - 1];
@@ -163,8 +165,7 @@ export class GameGui {
           }
         }
         // --- Show country info overlay and action panel for the last used country (simulate click) ---
-        // Find the last country used in the last action (if any)
-        if (this.currentGame.activePlayer && this.currentGame.activePlayer.actionLog.length > 0) {
+        if (!this.isProcessingAdvisorSynthetic && this.currentGame.activePlayer && this.currentGame.activePlayer.actionLog.length > 0) {
           const lastAction = this.currentGame.activePlayer.actionLog[this.currentGame.activePlayer.actionLog.length - 1];
           if (lastAction.countries && lastAction.countries.length > 0) {
             const lastCountry = lastAction.countries[lastAction.countries.length - 1];
@@ -269,12 +270,40 @@ export class GameGui {
                 const byName = worldCountries.find((wc: any) => wc.name === c.name);
                 if (byName && byName !== c) {
                   console.warn('[Advisor/Action] Country instance mismatch:', c.name, c, byName);
+                  if (byName.name === c.name) {
+                    console.error('[Advisor/Action] Country instance mismatch but names match:', c.name, c, byName);
+                  }
                 }
               }
               const sameAction = opp.action.Type() === action.Type();
-              const sameCountries = opp.countries.length === clickedCountries.length && opp.countries.every((c: any, i: number) => c === clickedCountries[i]);
+              if (!sameAction) {
+                console.log('[Advisor/Action] Action type mismatch:', opp.action.Type(), action.Type());
+              }
+              // Only compare the last n entries of clickedCountries, where n = opp.countries.length
+              const n = opp.countries.length;
+              const lastClicked = clickedCountries.slice(-n);
+              const sameCountries = lastClicked.length === n && opp.countries.every((c: any, i: number) => c === lastClicked[i]);
+              if (!sameCountries) {
+                console.log('[Advisor/Action] Country array mismatch:');
+                console.log('  opp.countries:', opp.countries.map((c: any) => c.name));
+                console.log('  lastClicked:', lastClicked.map((c: any) => c && c.name));
+                for (let i = 0; i < Math.max(opp.countries.length, lastClicked.length); ++i) {
+                  const oc = opp.countries[i];
+                  const cc = lastClicked[i];
+                  if (oc !== cc) {
+                    if (oc && cc && oc.name === cc.name) {
+                      console.error('[Advisor/Action] Country instance mismatch at index', i, 'but names match:', oc.name, oc, cc);
+                    } else {
+                      console.log('[Advisor/Action] Country mismatch at index', i, ':', oc, cc);
+                    }
+                  }
+                }
+              }
               if (sameAction && sameCountries) {
+                console.log('[Advisor/Action] Using advisor suggested amount:', opp.amount);
                 initial = opp.amount;
+              } else {
+                console.log('[Advisor/Action] Not using advisor amount. sameAction:', sameAction, 'sameCountries:', sameCountries);
               }
             }
             const selected = await showAmountDialog(min, max, initial);
@@ -650,6 +679,13 @@ export class GameGui {
         mapCanvas.removeEventListener('mousedown', (mapCanvas as any)._countryClickHandler);
       }
       const countryClickHandler = (e: MouseEvent) => {
+        console.log('[countryClickHandler] event:', e.type, 'isAdvisorSynthetic:', (e as any).isAdvisorSynthetic, 'coords:', e.clientX, e.clientY);
+        console.trace('[countryClickHandler] call stack');
+        if ((e as any).isAdvisorSynthetic) {
+          this.isProcessingAdvisorSynthetic = true;
+        } else {
+          this.isProcessingAdvisorSynthetic = false;
+        }
         if (this.paused) return;
         const mapWidth = mapCanvas.width;
         const mapHeight = mapCanvas.height;
@@ -797,12 +833,40 @@ export class GameGui {
                             const byName = worldCountries.find((wc: any) => wc.name === c.name);
                             if (byName && byName !== c) {
                               console.warn('[Advisor/Action] Country instance mismatch:', c.name, c, byName);
+                              if (byName.name === c.name) {
+                                console.error('[Advisor/Action] Country instance mismatch but names match:', c.name, c, byName);
+                              }
                             }
                           }
                           const sameAction = opp.action.Type() === action.Type();
-                          const sameCountries = opp.countries.length === clickedCountries.length && opp.countries.every((c: any, i: number) => c === clickedCountries[i]);
+                          if (!sameAction) {
+                            console.log('[Advisor/Action] Action type mismatch:', opp.action.Type(), action.Type());
+                          }
+                          // Only compare the last n entries of clickedCountries, where n = opp.countries.length
+                          const n = opp.countries.length;
+                          const lastClicked = clickedCountries.slice(-n);
+                          const sameCountries = lastClicked.length === n && opp.countries.every((c: any, i: number) => c === lastClicked[i]);
+                          if (!sameCountries) {
+                            console.log('[Advisor/Action] Country array mismatch:');
+                            console.log('  opp.countries:', opp.countries.map((c: any) => c.name));
+                            console.log('  lastClicked:', lastClicked.map((c: any) => c && c.name));
+                            for (let i = 0; i < Math.max(opp.countries.length, lastClicked.length); ++i) {
+                              const oc = opp.countries[i];
+                              const cc = lastClicked[i];
+                              if (oc !== cc) {
+                                if (oc && cc && oc.name === cc.name) {
+                                  console.error('[Advisor/Action] Country instance mismatch at index', i, 'but names match:', oc.name, oc, cc);
+                                } else {
+                                  console.log('[Advisor/Action] Country mismatch at index', i, ':', oc, cc);
+                                }
+                              }
+                            }
+                          }
                           if (sameAction && sameCountries) {
+                            console.log('[Advisor/Action] Using advisor suggested amount:', opp.amount);
                             initial = opp.amount;
+                          } else {
+                            console.log('[Advisor/Action] Not using advisor amount. sameAction:', sameAction, 'sameCountries:', sameCountries);
                           }
                         }
                         const selected = await showAmountDialog(min, max, initial);
@@ -877,6 +941,7 @@ export class GameGui {
             }
           } 
         }
+        this.isProcessingAdvisorSynthetic = false;
       };
       mapCanvas.addEventListener('mousedown', countryClickHandler);
       (mapCanvas as any)._countryClickHandler = countryClickHandler;
@@ -1137,32 +1202,59 @@ export class GameGui {
     actionPanel.style.marginBottom = '18px';
     actionPanel.style.minHeight = '140px';
     actionPanel.style.maxWidth = '480px';
-    // Left: action buttons area (70%)
-    const actionsDiv = document.createElement('div');
-    actionsDiv.id = 'action-buttons-area';
-    actionsDiv.style.display = 'flex';
-    actionsDiv.style.flexDirection = 'column';
-    actionsDiv.style.gap = '16px';
-    actionsDiv.style.flex = '0 1 70%';
-    actionsDiv.style.maxWidth = '70%';
-    // Right: advisor image (30%)
+    // Left: advisor speech bubble (flex: 1)
+    const advisorSpeech = document.createElement('div');
+    advisorSpeech.id = 'advisor-speech-bubble';
+    advisorSpeech.style.position = 'relative';
+    advisorSpeech.style.flex = '1 1 0%';
+    advisorSpeech.style.height = '80%';
+    advisorSpeech.style.background = 'white';
+    advisorSpeech.style.color = '#222';
+    advisorSpeech.style.fontFamily = "'MedievalSharp', 'Times New Roman', serif";
+    advisorSpeech.style.fontSize = '1.18rem';
+    advisorSpeech.style.padding = '18px 24px';
+    advisorSpeech.style.borderRadius = '18px';
+    advisorSpeech.style.boxShadow = '0 2px 12px rgba(0,0,0,0.18)';
+    advisorSpeech.style.border = '2px solid #a67c52';
+    advisorSpeech.style.display = 'none';
+    advisorSpeech.style.zIndex = '2';
+    advisorSpeech.style.pointerEvents = 'none';
+    advisorSpeech.style.transition = 'opacity 0.3s';
+    advisorSpeech.style.opacity = '0';
+    advisorSpeech.style.textAlign = 'left';
+    advisorSpeech.style.lineHeight = '1.4';
+    advisorSpeech.innerHTML = '';
+    // Add a right-pointing speech bubble spike using a pseudo-element
+    advisorSpeech.style.setProperty('position', 'relative');
+    const styleSheet = document.createElement('style');
+    styleSheet.innerHTML = `
+    #advisor-speech-bubble::after {
+      content: '';
+      position: absolute;
+      right: -28px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 0;
+      height: 0;
+      border-top: 18px solid transparent;
+      border-bottom: 18px solid transparent;
+      border-left: 28px solid white;
+      filter: drop-shadow(-2px 0 0 #a67c52);
+      z-index: 3;
+    }
+    `;
+    document.head.appendChild(styleSheet);
+    // Right: advisor image (fixed width)
     const advisorDiv = document.createElement('div');
-    advisorDiv.style.flex = '1 1 30%';
+    advisorDiv.style.flex = '0 0 144px';
     advisorDiv.style.display = 'flex';
+    advisorDiv.style.flexDirection = 'column';
     advisorDiv.style.alignItems = 'flex-end';
     advisorDiv.style.justifyContent = 'center';
     advisorDiv.style.height = '100%';
-    advisorDiv.style.marginLeft = '18px';
-    const advisorImg = document.createElement('img');
-    advisorImg.src = 'Advisor.png';
-    advisorImg.alt = 'Advisor';
-    advisorImg.style.maxWidth = '100%';
-    advisorImg.style.maxHeight = '96px';
-    advisorImg.style.objectFit = 'contain';
-    advisorImg.style.borderRadius = '6px';
-    advisorDiv.appendChild(advisorImg);
-    // Assemble panel
-    actionPanel.appendChild(actionsDiv);
+    advisorDiv.style.marginLeft = 'auto';
+    // Assemble panel: speech bubble, then advisorDiv
+    actionPanel.appendChild(advisorSpeech);
     actionPanel.appendChild(advisorDiv);
     sidebar.appendChild(actionPanel);
     // End Turn button (below panel)
@@ -1207,36 +1299,54 @@ export class GameGui {
     container.appendChild(wrapper);
 
     // Add click handler to advisor image
-    advisorImg.addEventListener('click', async () => {
+    advisorDiv.addEventListener('click', async () => {
+      console.log('[Advisor] advisor image clicked');
+      if (this.isAdvisorAnimationRunning) {
+        console.log('[Advisor] Animation already running, ignoring click');
+        return;
+      }
       const player = this.currentGame?.activePlayer;
       if (!player || !player.AI) return;
       player.AI.game = this.currentGame; // Ensure AI has a valid game reference
       const opp = player.AI.findBestOpportunity();
-      const panel = document.getElementById('action-result-panel');
+      let adviceText = '';
       if (!opp) {
-        if (panel) panel.innerHTML = '<span style="color:#fff">Sorry, sir, I have no idea what to do!</span>';
-        return;
+        adviceText = 'Sorry, sir, I have no idea what to do!';
+      } else {
+        let actionString = opp.action.ActionString(opp.countries, player, this.currentGame, opp.amount);
+        if (actionString.length > 0) {
+          actionString = actionString.charAt(0).toLowerCase() + actionString.slice(1);
+        }
+        adviceText = `I think, ${actionString} would be a good idea.`;
       }
-      // Set advisedOpportunity so the amount dialog can use it
-      if (this.currentGame) this.currentGame.advisedOpportunity = opp;
-      // Play advisor animation before showing text
-      const { runAdvisorAnimation } = await import('./AdvisorAnimation');
-      await runAdvisorAnimation(this, opp);
-      let actionString = opp.action.ActionString(opp.countries, player, this.currentGame, opp.amount);
-      if (actionString.length > 0) {
-        actionString = actionString.charAt(0).toLowerCase() + actionString.slice(1);
+      // Show bubble immediately
+      advisorSpeech.innerHTML = adviceText;
+      advisorSpeech.style.display = 'block';
+      advisorSpeech.style.opacity = '1';
+      // Play animation after showing bubble
+      if (opp) {
+        if (this.currentGame) this.currentGame.advisedOpportunity = opp;
+        const { runAdvisorAnimation } = await import('./AdvisorAnimation');
+        this.isAdvisorAnimationRunning = true;
+        console.log('[Advisor] Starting advisor animation');
+        await runAdvisorAnimation(this, opp);
+        this.isAdvisorAnimationRunning = false;
       }
-      if (panel) panel.innerHTML = `<span style=\"color:#fff\">I think, ${actionString} would be a good idea.</span>`;
-      // Flash the action result panel to draw attention
-      if (panel) {
-        const originalBg = panel.style.background;
-        panel.style.transition = 'background 0.2s';
-        panel.style.background = '#ffd700';
-        setTimeout(() => {
-          panel.style.background = originalBg;
-        }, 200);
-      }
+      setTimeout(() => {
+        advisorSpeech.style.opacity = '0';
+        setTimeout(() => advisorSpeech.style.display = 'none', 5000);
+      }, 5000);
     });
+
+    // Advisor image
+    const advisorImg = document.createElement('img');
+    advisorImg.src = 'Advisor.png';
+    advisorImg.alt = 'Advisor';
+    advisorImg.style.maxWidth = '100%';
+    advisorImg.style.maxHeight = '144px';
+    advisorImg.style.objectFit = 'contain';
+    advisorImg.style.borderRadius = '6px';
+    advisorDiv.appendChild(advisorImg);
   }
 
   /**
@@ -1245,4 +1355,8 @@ export class GameGui {
   public setClickedCountryNames(names: string[]) {
     this.clickedCountryNames = names;
   }
+
+  public isProcessingAdvisorSynthetic: boolean = false;
+
+  public isAdvisorAnimationRunning: boolean = false;
 }
