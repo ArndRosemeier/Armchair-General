@@ -44,6 +44,40 @@ export class AI {
   FindSpyOpportunities(): Opportunity[] {
     const action = new ActionSpy();
     const opportunities: Opportunity[] = [];
+
+    // --- NEW LOGIC: Closest 3 enemies to strongest owned country ---
+    if (this.player.ownedCountries.length > 0) {
+      // Find the owned country with the biggest army
+      const strongest = this.player.ownedCountries.reduce((max, c) => c.armies > max.armies ? c : max, this.player.ownedCountries[0]);
+      // Get all enemy countries (owned by someone else)
+      const worldMap = this.game.worldMap;
+      const allCountries = worldMap.getCountries();
+      const enemyCountries = allCountries.filter(c => c.owner && c.owner !== this.player);
+      // Get the 3 enemy countries with the smallest distance from strongest (only reachable ones)
+      const closestEnemies = enemyCountries
+        .map(c => {
+          const dist = worldMap.distance(strongest, c);
+          return dist !== null ? { country: c, distance: dist } : null;
+        })
+        .filter((x): x is { country: Country, distance: number } => x !== null)
+        .sort((a, b) => a.distance - b.distance)
+        .slice(0, 3);
+      for (const { country, distance } of closestEnemies) {
+        if (distance > 200) continue; // Only consider enemies within distance 200
+        const knowledge = this.player.knowledge.find(k => k.country === country);
+        // If knowledge is missing or too old (>3 turns), create a spy opportunity
+        if (!knowledge || (this.game.gameTurn - knowledge.gameTurn) > 3) {
+          const spyCost = country.fortified ? Game.spyFortifiedCost : Game.spyCost;
+          if (this.player.money >= spyCost) {
+            // Use a high score to prioritize these
+            opportunities.push(new Opportunity([country], 0, action, 10000));
+            break; // Only create one spy opportunity in this loop
+          }
+        }
+      }
+    }
+    // --- END NEW LOGIC ---
+
     const nonOwned = this.getNonOwnedCountriesSortedByDistance();
     // Calculate knowledge goal for opponent-owned countries
     const worldMap = this.game.worldMap;
