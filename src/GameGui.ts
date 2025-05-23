@@ -101,8 +101,6 @@ export class GameGui {
    * Refreshes the country info panel for the last clicked country and forces a redraw of the world map.
    */
   afterAction() {
-    console.log('[afterAction] isProcessingAdvisorSynthetic:', this.isProcessingAdvisorSynthetic, 'this:', this);
-    console.trace('[afterAction] call stack');
     // Refresh country info panel for the last clicked country
     if (this.clickedCountryNames.length > 0 && this.currentGame && this.currentGame.worldMap) {
       const lastCountryName = this.clickedCountryNames[this.clickedCountryNames.length - 1];
@@ -679,13 +677,6 @@ export class GameGui {
         mapCanvas.removeEventListener('mousedown', (mapCanvas as any)._countryClickHandler);
       }
       const countryClickHandler = (e: MouseEvent) => {
-        console.log('[countryClickHandler] event:', e.type, 'isAdvisorSynthetic:', (e as any).isAdvisorSynthetic, 'coords:', e.clientX, e.clientY);
-        console.trace('[countryClickHandler] call stack');
-        if ((e as any).isAdvisorSynthetic) {
-          this.isProcessingAdvisorSynthetic = true;
-        } else {
-          this.isProcessingAdvisorSynthetic = false;
-        }
         if (this.paused) return;
         const mapWidth = mapCanvas.width;
         const mapHeight = mapCanvas.height;
