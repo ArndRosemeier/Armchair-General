@@ -76,6 +76,10 @@ export function showBalloonAnimation(
   // How many frames to keep in the path (enough for all balloons)
   const maxPathLength = Math.ceil((BALLOON_COUNT + 2) * BALLOON_SPACING);
 
+  // For smoothing and clamping the fake 3D scale
+  let lastScale3d = BALLOON_SCALE;
+  const maxScaleDelta = 0.002; // Even subtler per-frame change
+
   function startAnimation() {
     let lastTime = performance.now();
     function animate(now: number) {
@@ -149,12 +153,26 @@ export function showBalloonAnimation(
       }
 
       // Compute fake 3D scale for this head position
-      const t3d = (performance.now() * 0.000012) % 1; // 5x slower than last version
+      const t3d = (performance.now() * 0.000012) % 1;
       const phaseA = t3d * Math.PI * 2;
-      const phaseB = t3d * Math.PI * 2 * 0.73 + Math.sin(t3d * Math.PI * 2 * 0.41);
-      // Two slow sines for smooth, erratic but continuous movement
-      const erratic = 0.18 * Math.sin(phaseB);
-      const scale3d = BALLOON_SCALE * (0.7 + 0.6 * (0.5 + 0.5 * Math.sin(phaseA) + erratic));
+      const phaseB = t3d * Math.PI * 2 * 0.73 + 1.7;
+      const phaseC = t3d * Math.PI * 2 * 0.41 + 2.3;
+      // Sum of three slow sines for smooth, organic movement
+      const erratic = 0.18 * Math.sin(phaseB) + 0.12 * Math.sin(phaseA * 1.31 + 0.9) + 0.09 * Math.sin(phaseC);
+      let scale3dTarget = BALLOON_SCALE * (0.7 + 0.6 * (0.5 + 0.5 * Math.sin(phaseA) + erratic));
+      // Clamp target before lerp
+      let deltaTarget = scale3dTarget - lastScale3d;
+      if (Math.abs(deltaTarget) > maxScaleDelta) {
+        scale3dTarget = lastScale3d + Math.sign(deltaTarget) * maxScaleDelta;
+      }
+      // Lerp smoothing
+      let scale3d = lastScale3d + (scale3dTarget - lastScale3d) * 0.18;
+      // Clamp after lerp
+      const delta = scale3d - lastScale3d;
+      if (Math.abs(delta) > maxScaleDelta) {
+        scale3d = lastScale3d + Math.sign(delta) * maxScaleDelta;
+      }
+      lastScale3d = scale3d;
       // Store head position and scale in path
       path.unshift({ x: snakeCenter.x, y: snakeCenter.y, dir: snakeDir, scale3d });
       if (path.length > maxPathLength) path.pop();
@@ -203,13 +221,23 @@ export function showBalloonAnimation(
       ctx.shadowBlur = 0;
       ctx.restore();
 
+      // Collect all balloon render data
+      const balloonRenderData = [];
       for (let i = 0; i < BALLOON_COUNT; ++i) {
-        // Each balloon follows the path of the head, offset by spacing
         const pathIdx = Math.floor(i * BALLOON_SPACING);
         const pos = path[pathIdx] || path[path.length - 1] || { x: snakeCenter.x, y: snakeCenter.y, dir: snakeDir, scale3d: BALLOON_SCALE };
-        const bx = pos.x;
-        const by = pos.y;
-        const scale3d = pos.scale3d;
+        balloonRenderData.push({
+          i,
+          x: pos.x,
+          y: pos.y,
+          scale3d: pos.scale3d
+        });
+      }
+      // Sort by scale3d (smallest first)
+      balloonRenderData.sort((a, b) => a.scale3d - b.scale3d);
+      // Render in sorted order
+      for (const data of balloonRenderData) {
+        const { i, x: bx, y: by, scale3d } = data;
         const w = balloonImg.width * scale3d;
         const h = balloonImg.height * scale3d;
         ctx.save();
@@ -229,6 +257,7 @@ export function showBalloonAnimation(
         ctx.shadowBlur = 0;
         ctx.restore();
       }
+
       requestAnimationFrame(animate);
     }
     requestAnimationFrame(animate);
