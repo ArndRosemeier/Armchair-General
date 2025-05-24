@@ -149,6 +149,7 @@ async function animateHandAndSplash(ctx: CanvasRenderingContext2D, x: number, y:
 
 // Main function to run the advisor animation
 export async function runAdvisorAnimation(gameGui: GameGui, opportunity: Opportunity) {
+  gameGui.isProcessingAdvisorSynthetic = true;
   const mapArea = document.querySelector('div[style*="flex: 3"]') as HTMLElement;
   if (!mapArea) return;
   // Get map area position relative to viewport
@@ -175,11 +176,9 @@ export async function runAdvisorAnimation(gameGui: GameGui, opportunity: Opportu
   const ctx = overlay.getContext('2d');
   if (!ctx) return;
 
-  let history: string[] = [];
+  let localHistory: string[] = [];
   for (const country of opportunity.countries) {
-    // Accumulate click history
-    history.push(country.name);
-    gameGui.setClickedCountryNames(history);
+    localHistory.push(country.name);
     // Update info panel
     const infoPanel = document.getElementById('country-info-panel');
     if (infoPanel && gameGui.currentGame && typeof gameGui.currentGame.gameTurn === 'number') {
@@ -209,9 +208,42 @@ export async function runAdvisorAnimation(gameGui: GameGui, opportunity: Opportu
     await animateHandAndSplash(ctx, cx, cy, overlay);
     ctx.clearRect(0, 0, overlay.width, overlay.height);
   }
-  // After all, update action buttons with full click history
-  gameGui.setClickedCountryNames(history);
-  gameGui.updateActionButtons();
+  // After the loop, set clickedCountryNames to a copy
+  gameGui.setClickedCountryNames([...localHistory]);
+  // After all, simulate real clicks for each country in the opportunity, in order, with a short delay between each
+  if (localHistory.length > 0 && mapArea) {
+    const countries = gameGui.currentGame?.worldMap?.getCountries() || [];
+    const mapCanvas = mapArea.querySelector('canvas');
+    if (mapCanvas) {
+      // Loop over a copy to avoid mutation during iteration
+      for (const countryName of [...localHistory]) {
+        const country = countries.find((c: any) => c.name === countryName);
+        if (country) {
+          const [cx, cy] = country.center ? country.center() : [0, 0];
+          const mapWidth = mapCanvas.width;
+          const mapHeight = mapCanvas.height;
+          const clientRect = mapCanvas.getBoundingClientRect();
+          const scaleX = clientRect.width / mapWidth;
+          const scaleY = clientRect.height / mapHeight;
+          const px = cx * scaleX;
+          const py = cy * scaleY;
+          // Create a synthetic MouseEvent at the country center
+          const evt = new MouseEvent('mousedown', {
+            bubbles: true,
+            cancelable: true,
+            clientX: clientRect.left + px,
+            clientY: clientRect.top + py
+          });
+          // Mark as advisor synthetic
+          Object.defineProperty(evt, 'isAdvisorSynthetic', { value: true });
+          mapCanvas.dispatchEvent(evt);
+          // Wait a short time before the next click
+          await new Promise(r => setTimeout(r, 50));
+        }
+      }
+    }
+  }
   // Remove overlay after animation
   overlay.parentElement?.removeChild(overlay);
+  gameGui.isProcessingAdvisorSynthetic = false;
 } 

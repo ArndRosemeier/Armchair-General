@@ -1,5 +1,6 @@
 import { GameGui } from './GameGui';
 import { showStartupAnimation } from './StartupAnimation';
+import { showBalloonAnimation } from './BalloonAnimation';
 
 const app = document.getElementById('app');
 
@@ -13,7 +14,10 @@ if (app) {
     const mapArea = app.querySelector('div[style*="flex: 3"]');
     if (mapArea) {
       showStartupAnimation(mapArea as HTMLElement, () => {
-        // Optionally, could trigger a re-render or focus here
+        // Play balloon animation ONCE, no loop, no stop button
+        showBalloonAnimation(mapArea as HTMLElement, () => {
+          // Do nothing after balloon animation ends
+        });
       });
     }
   }, 0);
