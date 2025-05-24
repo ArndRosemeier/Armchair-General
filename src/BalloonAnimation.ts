@@ -71,8 +71,8 @@ export function showBalloonAnimation(
   }
   let hasEnteredMotionArea = false;
   const snakeSpeed = 1.0; // px per frame, slowed down by a factor of 2
-  // Store the path of the head balloon
-  const path: { x: number; y: number; dir: number }[] = [];
+  // Store the path of the head balloon, including fake 3D scale
+  const path: { x: number; y: number; dir: number; scale3d: number }[] = [];
   // How many frames to keep in the path (enough for all balloons)
   const maxPathLength = Math.ceil((BALLOON_COUNT + 2) * BALLOON_SPACING);
 
@@ -148,8 +148,15 @@ export function showBalloonAnimation(
         if (snakeCenter.y > canvas.height - MOTION_MARGIN) snakeCenter.y = canvas.height - MOTION_MARGIN;
       }
 
-      // Store head position in path
-      path.unshift({ x: snakeCenter.x, y: snakeCenter.y, dir: snakeDir });
+      // Compute fake 3D scale for this head position
+      const t3d = (performance.now() * 0.000012) % 1; // 5x slower than last version
+      const phaseA = t3d * Math.PI * 2;
+      const phaseB = t3d * Math.PI * 2 * 0.73 + Math.sin(t3d * Math.PI * 2 * 0.41);
+      // Two slow sines for smooth, erratic but continuous movement
+      const erratic = 0.18 * Math.sin(phaseB);
+      const scale3d = BALLOON_SCALE * (0.7 + 0.6 * (0.5 + 0.5 * Math.sin(phaseA) + erratic));
+      // Store head position and scale in path
+      path.unshift({ x: snakeCenter.x, y: snakeCenter.y, dir: snakeDir, scale3d });
       if (path.length > maxPathLength) path.pop();
 
       // Draw
@@ -160,9 +167,9 @@ export function showBalloonAnimation(
       const balloonPositions: { x: number; y: number }[] = [];
       for (let i = 0; i < BALLOON_COUNT; ++i) {
         const pathIdx = Math.floor(i * BALLOON_SPACING);
-        const pos = path[pathIdx] || path[path.length - 1] || { x: snakeCenter.x, y: snakeCenter.y, dir: snakeDir };
+        const pos = path[pathIdx] || path[path.length - 1] || { x: snakeCenter.x, y: snakeCenter.y, dir: snakeDir, scale3d: BALLOON_SCALE };
         // Attach rope higher: a bit above the balloon's center (by a fraction of balloon height)
-        const scale = BALLOON_SCALE;
+        const scale = pos.scale3d;
         const h = balloonImg.height * scale;
         balloonPositions.push({ x: pos.x, y: pos.y - h * 0.1 });
       }
@@ -199,24 +206,24 @@ export function showBalloonAnimation(
       for (let i = 0; i < BALLOON_COUNT; ++i) {
         // Each balloon follows the path of the head, offset by spacing
         const pathIdx = Math.floor(i * BALLOON_SPACING);
-        const pos = path[pathIdx] || path[path.length - 1] || { x: snakeCenter.x, y: snakeCenter.y, dir: snakeDir };
+        const pos = path[pathIdx] || path[path.length - 1] || { x: snakeCenter.x, y: snakeCenter.y, dir: snakeDir, scale3d: BALLOON_SCALE };
         const bx = pos.x;
         const by = pos.y;
-        const scale = BALLOON_SCALE;
-        const w = balloonImg.width * scale;
-        const h = balloonImg.height * scale;
+        const scale3d = pos.scale3d;
+        const w = balloonImg.width * scale3d;
+        const h = balloonImg.height * scale3d;
         ctx.save();
         ctx.globalAlpha = 0.98;
         ctx.drawImage(balloonImg, bx - w / 2, by - h, w, h);
         // Draw letter
-        ctx.font = `bold ${Math.round(256 * scale)}px Cinzel, Arial, sans-serif`;
+        ctx.font = `bold ${Math.round(256 * scale3d)}px Cinzel, Arial, sans-serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillStyle = 'orange';
         ctx.strokeStyle = '#fffbe6';
         ctx.lineWidth = 2.2;
         ctx.shadowColor = 'orange';
-        ctx.shadowBlur = 24 * scale;
+        ctx.shadowBlur = 24 * scale3d;
         ctx.strokeText(BALLOON_LETTERS[i], bx, by - h * 0.55);
         ctx.fillText(BALLOON_LETTERS[i], bx, by - h * 0.55);
         ctx.shadowBlur = 0;
