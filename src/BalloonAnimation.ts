@@ -5,7 +5,7 @@ const BALLOON_IMAGE_SRC = `${import.meta.env.BASE_URL}Balloon.png`;
 const BALLOON_LETTERS = Array.from('Futuremagic-Productions');
 const BALLOON_COUNT = BALLOON_LETTERS.length;
 const BALLOON_SCALE = 0.18; // Shrink the balloon image
-const BALLOON_SPACING = 64; // px between balloons (increased to avoid overlap)
+const BALLOON_SPACING = 192; // px between balloons (increased by a factor of 3)
 const SNAKE_AMPLITUDE = 48; // px
 const SNAKE_WAVELENGTH = 220; // px
 const SNAKE_SPEED = 0.12; // radians/sec
@@ -70,7 +70,7 @@ export function showBalloonAnimation(
     snakeDir = Math.atan2(targetY - snakeCenter.y, targetX - snakeCenter.x);
   }
   let hasEnteredMotionArea = false;
-  const snakeSpeed = 2.0; // px per frame, constant speed for all
+  const snakeSpeed = 1.0; // px per frame, slowed down by a factor of 2
   // Store the path of the head balloon
   const path: { x: number; y: number; dir: number }[] = [];
   // How many frames to keep in the path (enough for all balloons)
