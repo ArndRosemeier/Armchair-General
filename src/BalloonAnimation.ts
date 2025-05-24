@@ -169,7 +169,7 @@ export function showBalloonAnimation(
       // Draw rope as a series of quadratic curves between each pair
       ctx.save();
       ctx.strokeStyle = '#bfa76f';
-      ctx.lineWidth = 4;
+      ctx.lineWidth = 2;
       ctx.shadowColor = '#fffbe6';
       ctx.shadowBlur = 6;
       ctx.beginPath();
