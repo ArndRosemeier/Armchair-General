@@ -154,6 +154,48 @@ export function showBalloonAnimation(
 
       // Draw
       ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // --- Draw rope between balloons ---
+      // Collect all balloon positions first
+      const balloonPositions: { x: number; y: number }[] = [];
+      for (let i = 0; i < BALLOON_COUNT; ++i) {
+        const pathIdx = Math.floor(i * BALLOON_SPACING);
+        const pos = path[pathIdx] || path[path.length - 1] || { x: snakeCenter.x, y: snakeCenter.y, dir: snakeDir };
+        // Attach rope higher: a bit above the balloon's center (by a fraction of balloon height)
+        const scale = BALLOON_SCALE;
+        const h = balloonImg.height * scale;
+        balloonPositions.push({ x: pos.x, y: pos.y - h * 0.1 });
+      }
+      // Draw rope as a series of quadratic curves between each pair
+      ctx.save();
+      ctx.strokeStyle = '#bfa76f';
+      ctx.lineWidth = 4;
+      ctx.shadowColor = '#fffbe6';
+      ctx.shadowBlur = 6;
+      ctx.beginPath();
+      for (let i = 0; i < balloonPositions.length - 1; ++i) {
+        const p0 = balloonPositions[i];
+        const p1 = balloonPositions[i + 1];
+        // Midpoint between p0 and p1
+        const mx = (p0.x + p1.x) / 2;
+        const my = (p0.y + p1.y) / 2;
+        // Sag amount: proportional to distance, modulated for dynamic effect
+        const dist = Math.hypot(p1.x - p0.x, p1.y - p0.y);
+        const t = performance.now() * 0.001;
+        const dynamicSag = 18 + 12 * Math.sin(t + i * 0.7);
+        const sag = dist * 0.18 + dynamicSag;
+        // Control point below the midpoint
+        const cx = mx;
+        const cy = my + sag;
+        if (i === 0) {
+          ctx.moveTo(p0.x, p0.y);
+        }
+        ctx.quadraticCurveTo(cx, cy, p1.x, p1.y);
+      }
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+      ctx.restore();
+
       for (let i = 0; i < BALLOON_COUNT; ++i) {
         // Each balloon follows the path of the head, offset by spacing
         const pathIdx = Math.floor(i * BALLOON_SPACING);
