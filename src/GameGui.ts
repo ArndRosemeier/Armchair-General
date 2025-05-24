@@ -14,6 +14,8 @@ import { OCEAN } from './WorldMap';
 import { showActionLogDialog } from './ActionLogDialog';
 import { Serializer } from './Serializer';
 import { Country } from './Country';
+import { FunReader } from './FunReader';
+import manualText from '../docs/Armchair-General-Manual.txt?raw';
 
 export class GameGui {
   private state: string;
@@ -1058,10 +1060,76 @@ export class GameGui {
       input.click();
     });
 
+    // Manual image button (right-aligned, below button row)
+    const manualImg = document.createElement('img');
+    manualImg.src = 'manual.png';
+    manualImg.alt = 'Manual';
+    manualImg.style.display = 'block';
+    manualImg.style.marginLeft = 'auto';
+    manualImg.style.marginTop = '12px';
+    manualImg.style.marginBottom = '0';
+    manualImg.style.width = '96px';
+    manualImg.style.height = 'auto';
+    manualImg.style.cursor = 'pointer';
+    manualImg.style.boxShadow = '0 0 12px #bfa76f55';
+    manualImg.style.opacity = '0.7';
+    manualImg.onclick = () => {
+      // Modal overlay
+      const overlay = document.createElement('div');
+      overlay.style.position = 'fixed';
+      overlay.style.left = '0';
+      overlay.style.top = '0';
+      overlay.style.width = '100vw';
+      overlay.style.height = '100vh';
+      overlay.style.background = 'rgba(40,30,10,0.20)';
+      overlay.style.zIndex = '99999';
+      overlay.style.display = 'flex';
+      overlay.style.alignItems = 'center';
+      overlay.style.justifyContent = 'center';
+      // Manual content box
+      const manualBox = document.createElement('div');
+      manualBox.style.width = '80vw';
+      manualBox.style.maxWidth = 'none';
+      manualBox.style.height = '80vh';
+      manualBox.style.overflowY = 'auto';
+      manualBox.style.background = 'rgba(255,250,230,0.85)';
+      manualBox.style.borderRadius = '22px';
+      manualBox.style.boxShadow = '0 0 64px #bfa76f99, 0 0 8px #fffbe6';
+      manualBox.style.position = 'relative';
+      // Close button
+      const closeBtn = document.createElement('button');
+      closeBtn.textContent = '×';
+      closeBtn.style.position = 'absolute';
+      closeBtn.style.top = '18px';
+      closeBtn.style.right = '28px';
+      closeBtn.style.fontSize = '2.2em';
+      closeBtn.style.background = 'none';
+      closeBtn.style.border = 'none';
+      closeBtn.style.color = '#b22222';
+      closeBtn.style.cursor = 'pointer';
+      closeBtn.style.fontWeight = 'bold';
+      closeBtn.style.zIndex = '100000';
+      closeBtn.onpointerdown = () => {
+        overlay.remove();
+      };
+      manualBox.appendChild(closeBtn);
+      // Manual content
+      const contentDiv = document.createElement('div');
+      contentDiv.style.padding = '2.5em 2.5em 2em 2.5em';
+      // Render manual using FunReader
+      new FunReader(manualText).renderTo(contentDiv);
+      manualBox.appendChild(contentDiv);
+      overlay.appendChild(manualBox);
+      document.body.appendChild(overlay);
+    };
+
     buttonRow.appendChild(newGameImg);
     buttonRow.appendChild(saveGameImg);
     buttonRow.appendChild(loadGameImg);
     sidebar.appendChild(buttonRow);
+
+    // Move Manual image below the button row, right-aligned
+    sidebar.appendChild(manualImg);
 
     // Game Info
     const gameInfo = document.createElement('div');
@@ -1086,9 +1154,15 @@ export class GameGui {
         starsDiv.appendChild(star);
       }
       starsDiv.title = `${left} of ${total} actions remaining`;
-      gameInfo.appendChild(starsDiv);
-    } else {
-      turnInfo.textContent = 'No game loaded. Start a new game to play!';
+      // Create a flex row for stars and manual image
+      const starsRow = document.createElement('div');
+      starsRow.style.display = 'flex';
+      starsRow.style.flexDirection = 'row';
+      starsRow.style.alignItems = 'center';
+      starsRow.style.justifyContent = 'space-between';
+      starsRow.appendChild(starsDiv);
+      starsRow.appendChild(manualImg);
+      gameInfo.appendChild(starsRow);
     }
     gameInfo.appendChild(turnInfo);
     sidebar.appendChild(gameInfo);
@@ -1272,6 +1346,26 @@ export class GameGui {
       }
     };
     sidebar.appendChild(endTurnBtn);
+
+    // Add email address below End Turn button
+    const emailDiv = document.createElement('div');
+    emailDiv.style.textAlign = 'right';
+    emailDiv.style.marginTop = '-10px';
+    emailDiv.style.marginBottom = '8px';
+    emailDiv.style.fontSize = '0.92em';
+    emailDiv.style.opacity = '0.7';
+    emailDiv.style.letterSpacing = '0.01em';
+    emailDiv.style.userSelect = 'text';
+    const emailLink = document.createElement('a');
+    emailLink.href = 'mailto:armchair@futuremagic.de?subject=Armchair-general';
+    emailLink.textContent = 'armchair@futuremagic.de';
+    emailLink.style.color = '#fff';
+    emailLink.style.textDecoration = 'underline dotted';
+    emailLink.style.fontSize = 'inherit';
+    emailLink.style.fontFamily = 'inherit';
+    emailLink.target = '_blank';
+    emailDiv.appendChild(emailLink);
+    sidebar.appendChild(emailDiv);
 
     // Make sidebar wider
     sidebar.style.flex = '1';

@@ -13,11 +13,13 @@ if (app) {
   setTimeout(() => {
     const mapArea = app.querySelector('div[style*="flex: 3"]');
     if (mapArea) {
+      // Start balloon animation first
+      showBalloonAnimation(mapArea as HTMLElement, () => {
+        // Do nothing after balloon animation ends
+      });
+      // Then overlay the startup animation (text) on top
       showStartupAnimation(mapArea as HTMLElement, () => {
-        // Play balloon animation ONCE, no loop, no stop button
-        showBalloonAnimation(mapArea as HTMLElement, () => {
-          // Do nothing after balloon animation ends
-        });
+        // Do nothing after startup animation ends
       });
     }
   }, 0);
