@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Armchair-General – A Game of Dominion & Cunning</title>
+  <link href="https://fonts.googleapis.com/css2?family=UnifrakturCook:wght@700&family=MedievalSharp&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: #f5ecd6 url('https://www.transparenttextures.com/patterns/old-mathematics.png');
+      font-family: 'MedievalSharp', 'Times New Roman', serif;
+      color: #3b2412;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+    }
+    .parchment {
+      background: rgba(255,250,230,0.97);
+      border: 4px solid #bfa76f;
+      border-radius: 24px;
+      box-shadow: 0 0 32px #bfa76f55, 0 0 8px #fffbe6;
+      padding: 2.5em 2.5em 2em 2.5em;
+      max-width: 700px;
+      margin: 3em 1em 2em 1em;
+      width: 100%;
+    }
+    h1, h2, h3 {
+      font-family: 'UnifrakturCook', 'MedievalSharp', serif;
+      color: #7a5c1b;
+      margin-top: 0;
+    }
+    h1 {
+      font-size: 2.6em;
+      text-align: center;
+      margin-bottom: 0.2em;
+      letter-spacing: 0.04em;
+      text-shadow: 0 2px 8px #fffbe6;
+    }
+    h2 {
+      font-size: 1.5em;
+      margin-top: 1.5em;
+      margin-bottom: 0.5em;
+    }
+    .play-btn {
+      display: block;
+      margin: 2.5em auto 1.5em auto;
+      padding: 1em 2.5em;
+      font-size: 1.5em;
+      font-family: 'UnifrakturCook', 'MedievalSharp', serif;
+      background: linear-gradient(90deg,#ffd700 0%,#bfa76f 100%);
+      color: #3b2412;
+      border: 2px solid #bfa76f;
+      border-radius: 16px;
+      box-shadow: 0 2px 12px #bfa76f55;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s, transform 0.1s;
+      text-shadow: 0 1px 0 #fffbe6;
+    }
+    .play-btn:hover {
+      background: linear-gradient(90deg,#ffe066 0%,#ffd700 100%);
+      color: #7a5c1b;
+      transform: scale(1.04);
+    }
+    ul {
+      margin: 0.7em 0 0.7em 2.2em;
+      font-size: 1.18em;
+      color: #7a5c1b;
+      font-family: 'MedievalSharp', serif;
+      list-style-type: '\2738  ';
+    }
+    .faq {
+      margin-top: 2em;
+      background: #f8f3e3;
+      border-radius: 12px;
+      padding: 1.2em 1.5em;
+      border: 1.5px solid #bfa76f;
+      font-size: 1.08em;
+    }
+    .faq q {
+      font-style: italic;
+      color: #7a5c1b;
+    }
+    @media (max-width: 800px) {
+      .parchment { padding: 1.2em 0.5em; }
+      h1 { font-size: 2em; }
+    }
+  </style>
+</head>
+<body>
+  <div class="parchment">
+    <h1>Armchair-General</h1>
+    <p style="text-align:center;font-size:1.2em;margin-bottom:2em;">A contest of dominion and cunning, inspired by the noble diversions of the salons and war rooms of Europe.<br>Assume the mantle of a sovereign, command armies, fortify your realms, and outwit your rivals!</p>
+    <a class="play-btn" href="https://arndrosemeier.github.io/Armchair-General/">Play Now</a>
+    <h2>The Object of the Game</h2>
+    <p>Victory is not the mere annihilation of your rivals, but the attainment of preeminence through wealth. Command 80% of the world's income to win. It is the purse, not the sword alone, that secures the crown.</p>
+    <h2>Features</h2>
+    <ul>
+      <li>Turn-based strategy on a grand map of many lands</li>
+      <li>Raise armies, fortify countries, move and attack</li>
+      <li>Play against friends or cunning AI opponents</li>
+      <li>Historical advisor offers witty, helpful counsel</li>
+      <li>Rich, old-fashioned rulebook and immersive UI</li>
+    </ul>
+    <h2>How to Play</h2>
+    <ul>
+      <li>Each turn, take up to five actions: buy armies, fortify, move, attack, or spy</li>
+      <li>Move armies between your lands, attack rivals, or strengthen your defenses</li>
+      <li>Income is collected at the start of each round, based on your holdings</li>
+      <li>Use the advisor for strategic tips and guidance</li>
+    </ul>
+    <h2>FAQ</h2>
+    <div class="faq">
+      <b>How is victory achieved?</b><br>
+      <q>By commanding 80% of the world's income, through the wise acquisition of lands.</q><br><br>
+      <b>How may I enrich my treasury?</b><br>
+      <q>Each round, your income is determined by the lands under your sway.</q><br><br>
+      <b>What of fortifications?</b><br>
+      <q>They are planned and, after a suitable interval, completed, rendering a land more secure.</q><br><br>
+      <b>May I play against an automaton?</b><br>
+      <q>Indeed, the mechanical mind is a worthy, if unfeeling, adversary.</q><br><br>
+      <b>What if my coffers are empty?</b><br>
+      <q>You must await further income before raising armies or fortifying your lands.</q><br><br>
+      <b>How do I move my armies?</b><br>
+      <q>Select a land you own, then another of your dominions; the option to move will appear.</q>
+    </div>
+    <p style="margin-top:2.5em;text-align:center;font-size:1.1em;color:#7a5c1b;">May your stratagems be subtle, your armies steadfast, and your treasury ever full.<br>— The Publisher, and your humble Advisor</p>
+  </div>
+</body>
+</html> 
