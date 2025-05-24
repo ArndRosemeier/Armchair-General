@@ -10,14 +10,24 @@ export class FunReader {
 
   renderTo(container: HTMLElement) {
     container.innerHTML = '';
-    container.style.padding = '2em';
-    container.style.fontFamily = '"UnifrakturCook", "Cinzel Decorative", "Old English Text MT", serif';
+    container.style.padding = '2.7em 3.2em 2.7em 3.2em';
+    container.style.fontFamily = "UnifrakturCook, UnifrakturMaguntia, serif";
     container.style.color = '#3a2c13';
-    container.style.lineHeight = '1.7';
+    container.style.lineHeight = '1.8';
     container.style.maxWidth = 'none';
     container.style.width = '100%';
-    container.style.margin = '2em 0';
+    container.style.margin = '2.2em 0';
     container.style.boxSizing = 'border-box';
+    container.style.fontSize = '1.38em';
+    container.style.background =
+      "url('https://www.transparenttextures.com/patterns/old-mathematics.png'), " +
+      "url('https://www.transparenttextures.com/patterns/noise.png'), " +
+      "radial-gradient(ellipse at 60% 40%, #f8f5e1 70%, #f3e7c6 100%)";
+    container.style.backgroundBlendMode = 'multiply, multiply';
+    container.style.border = '4px double #bfa76f';
+    container.style.borderRadius = '18px';
+    container.style.boxShadow = '0 0 32px #bfa76f55, 0 0 0 8px #fffbe6cc inset';
+    container.style.textShadow = '0 1px 0 #fffbe6, 0 0 6px #fffbe6cc';
     // Split into lines and parse
     const lines = this.text.split(/\r?\n/);
     let inList = false;
@@ -29,12 +39,17 @@ export class FunReader {
         // Main title
         const h = document.createElement('h1');
         h.textContent = line.replace(/=+/g, '').trim();
-        h.style.fontFamily = 'Cinzel Decorative, serif';
-        h.style.fontSize = '2.6em';
-        h.style.letterSpacing = '0.12em';
-        h.style.textShadow = '0 0 16px #fffbe6, 0 2px 8px #bfa76f';
+        h.style.fontFamily = 'UnifrakturCook, UnifrakturMaguntia, serif';
+        h.style.fontSize = '3.2em';
+        h.style.letterSpacing = '0.13em';
+        h.style.textShadow = '0 0 18px #fffbe6, 0 2px 12px #bfa76f, 0 0 2px #fffbe6';
         h.style.textAlign = 'center';
-        h.style.margin = '0.7em 0 0.5em 0';
+        h.style.margin = '0.9em 0 0.6em 0';
+        h.style.color = '#bfa76f';
+        h.style.borderBottom = '3px solid #bfa76f';
+        h.style.paddingBottom = '0.2em';
+        h.style.position = 'relative';
+        h.innerHTML = `<span style="font-family:'UnifrakturCook',serif;font-size:1.2em;vertical-align:middle;">&#10070;</span> ` + h.textContent + ` <span style="font-family:'UnifrakturCook',serif;font-size:1.2em;vertical-align:middle;">&#10070;</span>`;
         container.appendChild(h);
         return;
       }
@@ -42,11 +57,15 @@ export class FunReader {
         // Numbered section
         const h = document.createElement('h2');
         h.textContent = line.replace(/^\d+\./, '').trim();
-        h.style.fontFamily = 'Cinzel Decorative, serif';
-        h.style.fontSize = '1.7em';
-        h.style.margin = '1.2em 0 0.3em 0';
-        h.style.color = '#7a5c1b';
-        h.style.textShadow = '0 0 8px #fffbe6';
+        h.style.fontFamily = 'UnifrakturCook, UnifrakturMaguntia, serif';
+        h.style.fontSize = '2.1em';
+        h.style.margin = '1.5em 0 0.4em 0';
+        h.style.color = '#bfa76f';
+        h.style.textShadow = '0 0 10px #fffbe6, 0 0 2px #bfa76f';
+        h.style.borderBottom = '2px dashed #bfa76f';
+        h.style.paddingBottom = '0.12em';
+        h.style.position = 'relative';
+        h.innerHTML = `<span style="font-family:'UnifrakturCook',serif;font-size:1.1em;vertical-align:middle;">&#10070;</span> ` + h.textContent;
         container.appendChild(h);
         return;
       }
@@ -59,14 +78,18 @@ export class FunReader {
         if (!inList) {
           inList = true;
           const ul = document.createElement('ul');
-          ul.style.margin = '0.5em 0 0.5em 2em';
-          ul.style.fontSize = '1.1em';
-          ul.style.listStyleType = 'square';
+          ul.style.margin = '0.7em 0 0.7em 2.2em';
+          ul.style.fontSize = '1.18em';
+          ul.style.listStyleType = '"\u2738  ";';
+          ul.style.color = '#7a5c1b';
+          ul.style.fontFamily = "UnifrakturCook, UnifrakturMaguntia, serif";
           container.appendChild(ul);
         }
         const ul = container.lastElementChild as HTMLUListElement;
         const li = document.createElement('li');
         li.innerHTML = this.parseInline(line.replace(/^\s*\- /, ''));
+        li.style.marginBottom = '0.3em';
+        li.style.textShadow = '0 0 4px #fffbe6';
         ul.appendChild(li);
         return;
       } else if (inList) {
@@ -85,14 +108,15 @@ export class FunReader {
           const faqDiv = document.createElement('div');
           faqDiv.className = 'faq-block';
           faqDiv.innerHTML = faqBlock;
-          faqDiv.style.background = '#fffbe6';
-          faqDiv.style.border = '2px solid #bfa76f';
-          faqDiv.style.borderRadius = '10px';
-          faqDiv.style.margin = '1.2em 0';
-          faqDiv.style.padding = '1em 1.5em';
-          faqDiv.style.boxShadow = '0 0 8px #bfa76f33';
-          faqDiv.style.fontFamily = 'Cinzel, serif';
-          faqDiv.style.fontSize = '1.08em';
+          faqDiv.style.background = 'linear-gradient(135deg,#fffbe6 60%,#f3e7c6 100%)';
+          faqDiv.style.border = '3px double #bfa76f';
+          faqDiv.style.borderRadius = '14px';
+          faqDiv.style.margin = '1.5em 0';
+          faqDiv.style.padding = '1.2em 2em';
+          faqDiv.style.boxShadow = '0 0 16px #bfa76f33, 0 0 0 4px #fffbe6cc inset';
+          faqDiv.style.fontFamily = "UnifrakturCook, UnifrakturMaguntia, serif";
+          faqDiv.style.fontSize = '1.18em';
+          faqDiv.style.textShadow = '0 0 6px #fffbe6';
           container.appendChild(faqDiv);
           faqBlock = '';
           inFAQ = false;
@@ -107,10 +131,11 @@ export class FunReader {
       // Drop cap for first paragraph
       if (container.childElementCount === 0 && line.trim().length > 0) {
         const p = document.createElement('p');
-        p.innerHTML = `<span style="float:left;font-size:2.2em;font-family:'Cinzel Decorative',serif;color:#bfa76f;line-height:0.8;margin-right:0.18em;">${line.trim()[0]}</span>${this.parseInline(line.trim().slice(1))}`;
-        p.style.fontSize = '1.18em';
-        p.style.margin = '1.2em 0 0.7em 0';
+        p.innerHTML = `<span style="float:left;font-size:2.8em;font-family:'UnifrakturCook','UnifrakturMaguntia',serif;color:#bfa76f;line-height:0.7;margin-right:0.22em;text-shadow:0 0 8px #fffbe6,0 0 2px #bfa76f;">${line.trim()[0]}</span>${this.parseInline(line.trim().slice(1))}`;
+        p.style.fontSize = '1.32em';
+        p.style.margin = '1.5em 0 0.9em 0';
         p.style.textAlign = 'justify';
+        p.style.letterSpacing = '0.01em';
         container.appendChild(p);
         return;
       }
@@ -118,9 +143,11 @@ export class FunReader {
       if (line.trim().length > 0) {
         const p = document.createElement('p');
         p.innerHTML = this.parseInline(line.trim());
-        p.style.fontSize = '1.13em';
-        p.style.margin = '0.7em 0';
+        p.style.fontSize = '1.19em';
+        p.style.margin = '0.8em 0';
         p.style.textAlign = 'justify';
+        p.style.letterSpacing = '0.01em';
+        p.style.textShadow = '0 0 4px #fffbe6';
         container.appendChild(p);
         return;
       }
