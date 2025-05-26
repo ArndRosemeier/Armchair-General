@@ -4,15 +4,24 @@
 const BALLOON_IMAGE_SRC = `${import.meta.env.BASE_URL}Balloon.png`;
 const BALLOON_LETTERS = Array.from('Futuremagic-Productions');
 const BALLOON_COUNT = BALLOON_LETTERS.length;
-const BALLOON_SCALE = 0.18; // Shrink the balloon image
-const BALLOON_SPACING = 192; // px between balloons (increased by a factor of 3)
-const SNAKE_AMPLITUDE = 48; // px
-const SNAKE_WAVELENGTH = 220; // px
-const SNAKE_SPEED = 0.12; // radians/sec
-const TURN_RADIUS = 80; // px, how sharply the snake can turn
-const EDGE_MARGIN = 32; // px, how close to edge before turning
-const MOTION_MARGIN = 80;
-const ANTICIPATION_MARGIN = MOTION_MARGIN + 80;
+const BASE_BALLOON_SCALE = 0.18; // for 1980px width
+const BASE_BALLOON_SPACING = 192;
+const BASE_SNAKE_AMPLITUDE = 48;
+const BASE_SNAKE_WAVELENGTH = 220;
+const BASE_TURN_RADIUS = 80;
+const BASE_EDGE_MARGIN = 32;
+const BASE_MOTION_MARGIN = 80;
+const BASE_ANTICIPATION_MARGIN = BASE_MOTION_MARGIN + 80;
+const BASE_WIDTH = 1980;
+let BALLOON_SCALE = BASE_BALLOON_SCALE;
+let BALLOON_SPACING = BASE_BALLOON_SPACING;
+let SNAKE_AMPLITUDE = BASE_SNAKE_AMPLITUDE;
+let SNAKE_WAVELENGTH = BASE_SNAKE_WAVELENGTH;
+let TURN_RADIUS = BASE_TURN_RADIUS;
+let EDGE_MARGIN = BASE_EDGE_MARGIN;
+let MOTION_MARGIN = BASE_MOTION_MARGIN;
+let ANTICIPATION_MARGIN = BASE_ANTICIPATION_MARGIN;
+let SNAKE_SPEED = 0.12; // radians/sec
 
 export function showBalloonAnimation(
   mapArea: HTMLElement,
@@ -42,6 +51,18 @@ export function showBalloonAnimation(
   canvas.style.pointerEvents = 'none';
   overlay.appendChild(canvas);
   const ctx = canvas.getContext('2d')!;
+
+  // --- Responsive scaling ---
+  const scaleFactor = canvas.width / BASE_WIDTH;
+  BALLOON_SCALE = BASE_BALLOON_SCALE * scaleFactor;
+  BALLOON_SPACING = BASE_BALLOON_SPACING * scaleFactor;
+  SNAKE_AMPLITUDE = BASE_SNAKE_AMPLITUDE * scaleFactor;
+  SNAKE_WAVELENGTH = BASE_SNAKE_WAVELENGTH * scaleFactor;
+  TURN_RADIUS = BASE_TURN_RADIUS * scaleFactor;
+  EDGE_MARGIN = BASE_EDGE_MARGIN * scaleFactor;
+  MOTION_MARGIN = BASE_MOTION_MARGIN * scaleFactor;
+  ANTICIPATION_MARGIN = BASE_ANTICIPATION_MARGIN * scaleFactor;
+  SNAKE_SPEED = 0.12; // Keep speed constant, or scale if desired
 
   // Load balloon image
   const balloonImg = new window.Image();
