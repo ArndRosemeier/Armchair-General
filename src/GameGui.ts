@@ -16,6 +16,8 @@ import { Serializer } from './Serializer';
 import { Country } from './Country';
 import { FunReader } from './FunReader';
 import manualText from '../docs/Armchair-General-Manual.txt?raw';
+import { ActionInvest } from './ActionInvest';
+import { OpportunityBrowser } from './OpportunityBrowser';
 
 export class GameGui {
   private state: string;
@@ -79,7 +81,15 @@ export class GameGui {
 
   constructor() {
     this.state = 'initialized';
-    this.actions = [new ActionSpy(), new ActionFortify(), new ActionAttack(), new ActionCalculateAttack(), new ActionMove(), new ActionBuyArmies()];
+    this.actions = [
+      new ActionSpy(),
+      new ActionFortify(),
+      new ActionAttack(),
+      new ActionCalculateAttack(),
+      new ActionMove(),
+      new ActionBuyArmies(),
+      new ActionInvest()
+    ];
     GameGui._instance = this;
     // Add F9 key listener for action log
     window.addEventListener('keydown', (e) => {
@@ -95,6 +105,38 @@ export class GameGui {
           const playerName = this.currentGame?.activePlayer?.name || 'Player';
           mod.showWinDialog(playerName, 100);
         });
+      }
+      if (e.key === 'F10') {
+        // Show OpportunityBrowser overlay
+        if (document.getElementById('opportunity-browser-overlay')) return;
+        const overlay = document.createElement('div');
+        overlay.id = 'opportunity-browser-overlay';
+        overlay.style.position = 'fixed';
+        overlay.style.left = '0';
+        overlay.style.top = '0';
+        overlay.style.width = '100vw';
+        overlay.style.height = '100vh';
+        overlay.style.background = 'rgba(20,20,30,0.92)';
+        overlay.style.zIndex = '99999';
+        overlay.style.display = 'flex';
+        overlay.style.alignItems = 'center';
+        overlay.style.justifyContent = 'center';
+        overlay.onclick = (evt) => {
+          if (evt.target === overlay) overlay.remove();
+        };
+        document.body.appendChild(overlay);
+        if (this.currentGame && this.currentGame.players) {
+          const browser = new OpportunityBrowser(this.currentGame.players);
+          browser.mount(overlay);
+        }
+        // Close on Escape
+        const escHandler = (evt: KeyboardEvent) => {
+          if (evt.key === 'Escape') {
+            overlay.remove();
+            window.removeEventListener('keydown', escHandler);
+          }
+        };
+        window.addEventListener('keydown', escHandler);
       }
     });
   }
@@ -119,6 +161,7 @@ export class GameGui {
             <div><b>Name:</b> <span style="${nameStyle}">${info.name}</span></div>
             <div><b>Owner:</b> ${info.owner ? info.owner.name : 'None'}</div>
             <div><b>Income:</b> <span style="${incomeStyle}">${info.income !== undefined ? info.income : '?'}</span></div>
+            <div><b>Income Potential:</b> <span>${clickedCountry.IncomePotential !== undefined ? clickedCountry.IncomePotential : '?'}</span></div>
             <div><b>Army:</b> ${info.army !== undefined ? info.army : '?'}</div>
           `;
         }
@@ -157,10 +200,9 @@ export class GameGui {
             infoPanel.innerHTML = `
               <div><b>Name:</b> <span style="${nameStyle}">${info.name}</span></div>
               <div><b>Owner:</b> ${info.owner ? info.owner.name : 'None'}</div>
-              <div><b>Income:</b> <span style="${incomeStyle}">${info.income !== undefined ? info.income : '?'} </span></div>
+              <div><b>Income:</b> <span style="${incomeStyle}">${info.income !== undefined ? info.income : '?'}</span></div>
+              <div><b>Income Potential:</b> <span>${clickedCountry.IncomePotential !== undefined ? clickedCountry.IncomePotential : '?'}</span></div>
               <div><b>Army:</b> ${info.army !== undefined ? info.army : '?'}</div>
-              <div>${infoStatusHtml}</div>
-              ${unrestText}
             `;
           }
         }
@@ -754,10 +796,9 @@ export class GameGui {
               mapOverlayPanel.innerHTML = `
                 <div><b>Name:</b> <span style="${nameStyle}">${info.name}</span></div>
                 <div><b>Owner:</b> ${info.owner ? info.owner.name : 'None'}</div>
-                <div><b>Income:</b> <span style="${incomeStyle}">${info.income !== undefined ? info.income : '?'} </span></div>
+                <div><b>Income:</b> <span style="${incomeStyle}">${info.income !== undefined ? info.income : '?'}</span></div>
+                <div><b>Income Potential:</b> <span>${clickedCountry.IncomePotential !== undefined ? clickedCountry.IncomePotential : '?'}</span></div>
                 <div><b>Army:</b> ${info.army !== undefined ? info.army : '?'}</div>
-                <div>${infoStatusHtml}</div>
-                ${unrestText}
               `;
               // Position overlay above the country center
               const [cx, cy] = clickedCountry.center ? clickedCountry.center() : [0, 0];
@@ -969,8 +1010,8 @@ export class GameGui {
     buttonRow.style.flexDirection = 'row';
     buttonRow.style.justifyContent = 'center';
     buttonRow.style.alignItems = 'center';
-    buttonRow.style.gap = '18px';
-    buttonRow.style.marginBottom = '24px';
+    buttonRow.style.gap = '4.5%'; // 18px/400px
+    buttonRow.style.marginBottom = '2.67%'; // 24px/900px
     buttonRow.style.width = '100%';
     buttonRow.style.minWidth = '0';
 
@@ -985,7 +1026,7 @@ export class GameGui {
       img.style.height = 'auto';
       img.style.objectFit = 'contain';
       img.style.cursor = 'pointer';
-      img.style.borderRadius = '8px';
+      img.style.borderRadius = '2%'; // 8px/400px
       img.style.boxShadow = '0 2px 8px rgba(30,32,34,0.13)';
       img.style.transition = 'transform 0.1s, box-shadow 0.1s';
       img.addEventListener('mouseenter', () => {
@@ -1066,9 +1107,9 @@ export class GameGui {
     manualImg.alt = 'Manual';
     manualImg.style.display = 'block';
     manualImg.style.marginLeft = 'auto';
-    manualImg.style.marginTop = '12px';
+    manualImg.style.marginTop = '1.33%'; // 12px/900px
     manualImg.style.marginBottom = '0';
-    manualImg.style.width = '96px';
+    manualImg.style.width = '24%'; // 96px/400px
     manualImg.style.height = 'auto';
     manualImg.style.cursor = 'pointer';
     manualImg.style.boxShadow = '0 0 12px #bfa76f55';
@@ -1093,15 +1134,15 @@ export class GameGui {
       manualBox.style.height = '80vh';
       manualBox.style.overflowY = 'auto';
       manualBox.style.background = 'rgba(255,250,230,0.85)';
-      manualBox.style.borderRadius = '22px';
+      manualBox.style.borderRadius = '5.5%'; // 22px/400px
       manualBox.style.boxShadow = '0 0 64px #bfa76f99, 0 0 8px #fffbe6';
       manualBox.style.position = 'relative';
       // Close button
       const closeBtn = document.createElement('button');
       closeBtn.textContent = '×';
       closeBtn.style.position = 'absolute';
-      closeBtn.style.top = '18px';
-      closeBtn.style.right = '28px';
+      closeBtn.style.top = '2%'; // 18px/900px
+      closeBtn.style.right = '7%'; // 28px/400px
       closeBtn.style.fontSize = '2.2em';
       closeBtn.style.background = 'none';
       closeBtn.style.border = 'none';
@@ -1133,7 +1174,7 @@ export class GameGui {
 
     // Game Info
     const gameInfo = document.createElement('div');
-    gameInfo.style.marginBottom = '32px';
+    gameInfo.style.marginBottom = '3.56%'; // 32px/900px
     const turnInfo = document.createElement('div');
     turnInfo.style.fontSize = '1.2rem';
     turnInfo.style.fontWeight = 'bold';
@@ -1144,7 +1185,7 @@ export class GameGui {
       const starsDiv = document.createElement('div');
       const total = activePlayer.constructor.ACTIONS_PER_TURN || 5;
       const left = activePlayer.actionsLeft;
-      starsDiv.style.margin = '8px 0 0 0';
+      starsDiv.style.margin = '0.89% 0 0 0'; // 8px/900px
       starsDiv.style.fontSize = '2rem';
       starsDiv.style.letterSpacing = '0.2rem';
       for (let i = 0; i < total; i++) {
@@ -1172,32 +1213,32 @@ export class GameGui {
       const playerListTitle = document.createElement('div');
       playerListTitle.textContent = 'Players';
       playerListTitle.style.fontWeight = 'bold';
-      playerListTitle.style.marginBottom = '8px';
+      playerListTitle.style.marginBottom = '0.89%'; // 8px/900px
       sidebar.appendChild(playerListTitle);
 
       const playerList = document.createElement('ul');
       playerList.style.listStyle = 'none';
       playerList.style.padding = '0';
-      playerList.style.margin = '0 0 24px 0';
+      playerList.style.margin = '0 0 2.67% 0'; // 24px/900px
       for (const player of game.players) {
         const li = document.createElement('li');
         li.style.display = 'flex';
         li.style.alignItems = 'center';
-        li.style.marginBottom = '8px';
+        li.style.marginBottom = '0.89%'; // 8px/900px
         // Highlight the active player with a glowy box
         if (player === game.activePlayer) {
           li.style.boxShadow = '0 0 16px 4px #ffd700, 0 0 4px 2px #fff';
           li.style.border = '2px solid #ffd700';
-          li.style.borderRadius = '12px';
+          li.style.borderRadius = '3%'; // 12px/400px
           li.style.background = 'rgba(255, 215, 0, 0.10)';
         }
         const colorDot = document.createElement('span');
         colorDot.style.display = 'inline-block';
-        colorDot.style.width = '16px';
-        colorDot.style.height = '16px';
+        colorDot.style.width = '4%'; // 16px/400px
+        colorDot.style.height = '4%'; // 16px/400px
         colorDot.style.borderRadius = '50%';
         colorDot.style.background = player.color;
-        colorDot.style.marginRight = '8px';
+        colorDot.style.marginRight = '2%'; // 8px/400px
         li.appendChild(colorDot);
         const nameSpan = document.createElement('span');
         nameSpan.textContent = player.name + (player.isAI ? ' (AI)' : '');
@@ -1207,19 +1248,19 @@ export class GameGui {
         if (typeof player.money === 'number') {
           const moneySpan = document.createElement('span');
           moneySpan.textContent = `💰 ${player.money}`;
-          moneySpan.style.marginLeft = '8px';
+          moneySpan.style.marginLeft = '2%'; // 8px/400px
           li.appendChild(moneySpan);
 
           // --- Progress bar for income share ---
           const progressBarContainer = document.createElement('span');
           progressBarContainer.style.display = 'inline-block';
-          progressBarContainer.style.width = '54px';
-          progressBarContainer.style.height = '12px';
-          progressBarContainer.style.marginLeft = '8px';
+          progressBarContainer.style.width = '13.5%'; // 54px/400px
+          progressBarContainer.style.height = '1.33%'; // 12px/900px
+          progressBarContainer.style.marginLeft = '2%'; // 8px/400px
           progressBarContainer.style.verticalAlign = 'middle';
           progressBarContainer.style.background = '#222';
           progressBarContainer.style.border = '1px solid #444';
-          progressBarContainer.style.borderRadius = '6px';
+          progressBarContainer.style.borderRadius = '1.5%'; // 6px/400px
           progressBarContainer.style.overflow = 'hidden';
 
           const fill = document.createElement('span');
@@ -1243,12 +1284,12 @@ export class GameGui {
     actionResultPanel.id = 'action-result-panel';
     actionResultPanel.style.background = '#a67c52';
     actionResultPanel.style.border = '1px solid #555';
-    actionResultPanel.style.borderRadius = '8px';
-    actionResultPanel.style.padding = '10px 12px';
-    actionResultPanel.style.marginBottom = '18px';
+    actionResultPanel.style.borderRadius = '2%'; // 8px/400px
+    actionResultPanel.style.padding = '1.11% 3%'; // 10px/900px, 12px/400px
+    actionResultPanel.style.marginBottom = '2%'; // 18px/900px
     actionResultPanel.style.color = '#fff';
     actionResultPanel.style.fontSize = '1.05rem';
-    actionResultPanel.style.minHeight = '60px';
+    actionResultPanel.style.minHeight = '6.67%'; // 60px/900px
     actionResultPanel.style.fontFamily = "'MedievalSharp', 'Times New Roman', serif";
     actionResultPanel.innerHTML = '<span style="color:#888">No recent action.</span>';
     sidebar.appendChild(actionResultPanel);
@@ -1261,12 +1302,12 @@ export class GameGui {
     actionPanel.style.alignItems = 'flex-start';
     actionPanel.style.background = '#a67c52';
     actionPanel.style.border = '1px solid #555';
-    actionPanel.style.borderRadius = '8px';
-    actionPanel.style.padding = '20px 24px';
+    actionPanel.style.borderRadius = '2%'; // 8px/400px
+    actionPanel.style.padding = '2.22% 6%'; // 20px/900px, 24px/400px
     actionPanel.style.marginTop = 'auto';
-    actionPanel.style.marginBottom = '18px';
-    actionPanel.style.minHeight = '140px';
-    actionPanel.style.maxWidth = '480px';
+    actionPanel.style.marginBottom = '2%'; // 18px/900px
+    actionPanel.style.minHeight = '15.56%'; // 140px/900px
+    actionPanel.style.maxWidth = '100%';
     // Left: advisor speech bubble (flex: 1)
     const advisorSpeech = document.createElement('div');
     advisorSpeech.id = 'advisor-speech-bubble';
@@ -1277,8 +1318,8 @@ export class GameGui {
     advisorSpeech.style.color = '#222';
     advisorSpeech.style.fontFamily = "'MedievalSharp', 'Times New Roman', serif";
     advisorSpeech.style.fontSize = '1.18rem';
-    advisorSpeech.style.padding = '18px 24px';
-    advisorSpeech.style.borderRadius = '18px';
+    advisorSpeech.style.padding = '2% 6%'; // 18px/900px, 24px/400px
+    advisorSpeech.style.borderRadius = '4.5%'; // 18px/400px
     advisorSpeech.style.boxShadow = '0 2px 12px rgba(0,0,0,0.18)';
     advisorSpeech.style.border = '2px solid #a67c52';
     advisorSpeech.style.display = 'none';
@@ -1296,14 +1337,14 @@ export class GameGui {
     #advisor-speech-bubble::after {
       content: '';
       position: absolute;
-      right: -28px;
+      right: -7%; /* 28px/400px */
       top: 50%;
       transform: translateY(-50%);
       width: 0;
       height: 0;
-      border-top: 18px solid transparent;
-      border-bottom: 18px solid transparent;
-      border-left: 28px solid white;
+      border-top: 2% solid transparent; /* 18px/900px */
+      border-bottom: 2% solid transparent; /* 18px/900px */
+      border-left: 7% solid white; /* 28px/400px */
       filter: drop-shadow(-2px 0 0 #a67c52);
       z-index: 3;
     }
@@ -1311,7 +1352,7 @@ export class GameGui {
     document.head.appendChild(styleSheet);
     // Right: advisor image (fixed width)
     const advisorDiv = document.createElement('div');
-    advisorDiv.style.flex = '0 0 144px';
+    advisorDiv.style.flex = '0 0 36%'; // 144px/400px
     advisorDiv.style.display = 'flex';
     advisorDiv.style.flexDirection = 'column';
     advisorDiv.style.alignItems = 'flex-end';
@@ -1326,16 +1367,16 @@ export class GameGui {
     const endTurnBtn = document.createElement('button');
     endTurnBtn.textContent = 'End Turn';
     endTurnBtn.classList.add('persistent-action-btn');
-    endTurnBtn.style.padding = '12px 0';
+    endTurnBtn.style.padding = '1.33% 0'; // 12px/900px
     endTurnBtn.style.fontSize = '1.1rem';
     endTurnBtn.style.background = 'linear-gradient(90deg,#43cea2 0%,#185a9d 100%)';
     endTurnBtn.style.color = '#fff';
     endTurnBtn.style.border = 'none';
-    endTurnBtn.style.borderRadius = '8px';
+    endTurnBtn.style.borderRadius = '2%'; // 8px/400px
     endTurnBtn.style.cursor = 'pointer';
     endTurnBtn.style.boxShadow = '0 2px 8px rgba(30,32,34,0.13)';
     endTurnBtn.style.fontFamily = "'MedievalSharp', 'Times New Roman', serif";
-    endTurnBtn.style.marginBottom = '18px';
+    endTurnBtn.style.marginBottom = '2%'; // 18px/900px
     endTurnBtn.onclick = () => {
       if (this.paused) return;
       if (this.currentGame) {
@@ -1350,8 +1391,8 @@ export class GameGui {
     // Add email address below End Turn button
     const emailDiv = document.createElement('div');
     emailDiv.style.textAlign = 'right';
-    emailDiv.style.marginTop = '-10px';
-    emailDiv.style.marginBottom = '8px';
+    emailDiv.style.marginTop = '-1.11%'; // -10px/900px
+    emailDiv.style.marginBottom = '0.89%'; // 8px/900px
     emailDiv.style.fontSize = '0.92em';
     emailDiv.style.opacity = '0.7';
     emailDiv.style.letterSpacing = '0.01em';
@@ -1368,14 +1409,13 @@ export class GameGui {
     sidebar.appendChild(emailDiv);
 
     // Make sidebar wider
-    sidebar.style.flex = '1';
+    sidebar.style.flex = '0 0 20%'; // Sidebar covers 20% of horizontal space
     sidebar.style.background = '#3b2412'; // deep brown
     sidebar.style.display = 'flex';
     sidebar.style.flexDirection = 'column';
-    sidebar.style.padding = '32px 24px';
+    sidebar.style.padding = '0.5% 0.5%'; // Minimal vertical and horizontal padding for maximum usable space
     sidebar.style.color = '#fff';
-    sidebar.style.minWidth = '420px';
-    sidebar.style.maxWidth = '520px';
+    sidebar.style.boxSizing = 'border-box';
     sidebar.style.fontFamily = "'MedievalSharp', 'Times New Roman', serif";
 
     // Assemble
