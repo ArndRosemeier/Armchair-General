@@ -5,6 +5,7 @@ export class Country {
   owner: Player | null;
   armies: number;
   income: number;
+  IncomePotential: number;
   coordinates: [number, number][];
   border: [number, number][];
   oceanBorder: [number, number][];
@@ -20,6 +21,9 @@ export class Country {
     this.owner = owner;
     this.armies = armies;
     this.income = income;
+    // IncomePotential: income * random factor between 1 and 10, heavily weighted towards 1
+    const factor = 1 + 9 * Math.pow(Math.random(), 3); // Cubic bias towards 1
+    this.IncomePotential = Math.floor(this.income * factor / 1000) * 1000;
     this.coordinates = [];
     this.border = [];
     this.oceanBorder = [];
@@ -125,6 +129,15 @@ export class Country {
     this.neighbors = ((this as any)._neighborIds || []).map((n: string) => countryRegistry[n]).filter(Boolean);
     delete (this as any)._ownerId;
     delete (this as any)._neighborIds;
+  }
+
+  static calculateIncomePotential(income: number): number {
+    const factor = 1 + 9 * Math.pow(Math.random(), 3); // Cubic bias towards 1
+    return Math.floor(income * factor / 1000) * 1000;
+  }
+
+  recalculateIncomePotential() {
+    this.IncomePotential = Country.calculateIncomePotential(this.income);
   }
 }
 

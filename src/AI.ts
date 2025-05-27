@@ -8,6 +8,7 @@ import { ActionSpy } from './ActionSpy';
 import { ActionMove } from './ActionMove';
 import { ActionFortify } from './ActionFortify';
 import { ActionBuyArmies } from './ActionBuyArmies';
+import { ActionInvest } from './ActionInvest';
 
 /**
  * AI class for handling computer-controlled player logic.
@@ -154,44 +155,27 @@ export class AI {
     // With a chance of 0.2, do PlanSurpriseAttack if actionsLeft is 4 or more, but only if actionPlan is empty
     if (this.player.actionsLeft >= 4 && Math.random() < 0.2 && this.actionPlan.length === 0) {
       this.PlanSurpriseAttack();
-      return true;
+      // Do not return here; proceed to execute the first planned action if any
     }
     let opportunity: Opportunity | null = null;
     let fromActionPlan = false;
+    let consideredOpportunities: Opportunity[] = [];
     if (this.actionPlan.length > 0) {
       opportunity = this.actionPlan.shift()!;
       fromActionPlan = true;
-      // Revalidate before executing
-      const act = opportunity.action;
-      const countries = opportunity.countries;
-      const amount = opportunity.amount;
-      let valid = true;
-      if (act instanceof ActionMove) {
-        const donor = countries[0];
-        if (!donor || donor.armies < amount + 1000) {
-          console.warn('Skipping invalid move from actionPlan:', opportunity);
-          this.actionPlan = [];
-          return false;
-        }
-      } else if (act instanceof ActionAttack) {
-        const fromCountry = countries[0];
-        const toCountry = countries[1];
-        if (!fromCountry || !toCountry || toCountry.owner === this.player || fromCountry.armies < amount) {
-          console.warn('Skipping invalid attack from actionPlan:', opportunity);
-          this.actionPlan = [];
-          return false;
-        }
-      } else if (act instanceof ActionBuyArmies) {
-        if (this.player.money < amount * Game.armyCost) {
-          console.warn('Skipping invalid buy from actionPlan:', opportunity);
-          this.actionPlan = [];
-          return false;
-        }
-      }
     } else {
-      opportunity = this.findBestOpportunity();
+      const result = this.findBestOpportunity();
+      opportunity = result.chosen;
+      consideredOpportunities = result.all;
     }
-    if (!opportunity) return false;
+    if (!opportunity) {
+      // No valid opportunity, but still have actions left: treat as a try
+      if (this.player.actionsLeft > 0) {
+        this.player.useAction();
+        return true;
+      }
+      return false;
+    }
     const result = await opportunity.action.Act(opportunity.countries, this.player, this.game, opportunity.amount);
     // Log the action
     const usedCountries = opportunity.countries.slice(-opportunity.action.countryCountNeeded);
@@ -201,6 +185,26 @@ export class AI {
       amount: opportunity.amount,
       result: result ?? null
     });
+    // Store OpportunityHistory
+    const actionNumber = 6 - this.player.actionsLeft;
+    const gameTurn = this.game?.gameTurn ?? 0;
+    if (fromActionPlan) {
+      // Only store the executed opportunity, with score 1000000
+      this.player.OpportunityHistory.push({
+        opportunity: { ...opportunity, score: 1000000 },
+        gameTurn,
+        actionNumber
+      });
+    } else {
+      // Store all considered opportunities for this action
+      for (const opp of consideredOpportunities) {
+        this.player.OpportunityHistory.push({
+          opportunity: opp,
+          gameTurn,
+          actionNumber
+        });
+      }
+    }
     // If the executed opportunity has a followUp and the actionPlan is empty, push it
     if (opportunity.followUp && this.actionPlan.length === 0) {
       this.actionPlan.push(opportunity.followUp);
@@ -450,10 +454,9 @@ export class AI {
 
   /**
    * Finds the best opportunity among all possible actions using softmax selection.
-   * Higher score opportunities are more likely, but not guaranteed, to be chosen.
-   * Throws an error if no opportunities exist.
+   * Returns an object with the chosen opportunity and the full list of considered opportunities.
    */
-  findBestOpportunity(): Opportunity | null {
+  findBestOpportunity(): { chosen: Opportunity | null, all: Opportunity[] } {
     // Prepare actions
     const spyAction = new ActionSpy();
     const attackAction = new ActionAttack();
@@ -467,9 +470,10 @@ export class AI {
     allOpportunities.push(...this.FindMoveOpportunities(moveAction));
     allOpportunities.push(...this.FindFortifyOpportunities(fortifyAction));
     allOpportunities.push(...this.FindBuyOpportunities());
-
+    allOpportunities.push(...this.FindInvestOpportunities()); 
+    
     if (allOpportunities.length === 0) {
-      return null
+      return { chosen: null, all: [] };
     }
 
     // Softmax selection
@@ -484,7 +488,7 @@ export class AI {
     let acc = 0;
     for (let i = 0; i < allOpportunities.length; ++i) {
       acc += probs[i];
-      if (r < acc) return allOpportunities[i];
+      if (r < acc) return { chosen: allOpportunities[i], all: allOpportunities };
     }
     // Fallback (should not happen)
     throw new Error("Softmax selection failed to pick an opportunity.");
@@ -709,5 +713,25 @@ export class AI {
       throw new Error("No threatened country found. This should not happen if there are enemy countries.");
     }
     return bestCountry;
+  }
+
+  /**
+   * Finds invest opportunities: countries with no or only friendly neighbors, pick the one with most armies.
+   * Sets amount to all player money minus 30000, rounded down to nearest 5000. Skips if amount is zero or less.
+   */
+  FindInvestOpportunities(): Opportunity[] {
+    const action = new ActionInvest();
+    // Candidates: owned countries with no neighbors or only friendly neighbors
+    const candidates = this.player.ownedCountries.filter(country =>
+      country.neighbors.length === 0 || country.neighbors.every(n => n.owner === this.player)
+    );
+    if (candidates.length === 0) return [];
+    // Pick the one with the most armies
+    const best = candidates.reduce((max, c) => c.armies > max.armies ? c : max, candidates[0]);
+    // Calculate amount: all player money minus 30000, rounded down to nearest 5000
+    let amount = Math.floor(((this.player.money - 30000) / 5000)) * 5000;
+    if (amount <= 0) return [];
+    // Create an opportunity with score 1000
+    return [new Opportunity([best], amount, action, 1000)];
   }
 }

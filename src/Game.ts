@@ -156,6 +156,12 @@ export class Game {
         player.AI.player = player;
       }
     }
+    // Recalculate income potential for all countries
+    for (const country of worldMap.getCountries()) {
+      if (typeof country.recalculateIncomePotential === 'function') {
+        country.recalculateIncomePotential();
+      }
+    }
     return game;
   }
 
@@ -258,14 +264,15 @@ export class Game {
             oldOwner.ownedCountries = oldOwner.ownedCountries.filter(c => c !== country);
           }
           this.UnKnowCountry(country);
+          country.armies = country.nationalPride * 2;
           country.nationalPride = 1000;
           country.unrestLevel = 0;
           country.income *= 2;
+          country.recalculateIncomePotential();
           // Set up new player
           newPlayer.homeCountry = country;
           newPlayer.ownedCountries.push(country);
           country.owner = newPlayer;
-          country.armies = country.nationalPride * 2;
           country.fortified = true;
 
           // Initialize AI
@@ -280,7 +287,10 @@ export class Game {
           this.UnKnowCountry(country);
           country.owner = null;
           country.armies = country.nationalPride;
+          country.unrestLevel = 0;
+          country.nationalPride = Math.min(country.nationalPride + 10000, 100000);
           country.fortified = false;
+          country.recalculateIncomePotential();
         }
       }
     }

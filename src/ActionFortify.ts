@@ -12,7 +12,7 @@ export class ActionFortify extends Action {
       return null;
     }
     const lastCountry = countries[countries.length - 1];
-    if (!lastCountry.canBeFortified()) {
+    if (lastCountry.owner !== activePlayer || !lastCountry.canBeFortified()) {
       return null;
     }
     return `Fortify ${lastCountry.name}`;

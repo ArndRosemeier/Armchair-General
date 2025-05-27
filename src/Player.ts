@@ -7,6 +7,7 @@ export interface CountryKnowledge {
   gameTurn: number;
   army: number; // observed army size at time of spying
   income: number; // observed income at time of spying
+  incomePotential?: number; // observed income potential at time of spying
 }
 
 export interface CountryInfo {
@@ -26,11 +27,18 @@ export interface PlayerActionLogEntry {
   result: string | null;
 }
 
+export interface OpportunityHistoryEntry {
+  opportunity: any;
+  gameTurn: number;
+  actionNumber: number;
+}
+
 export class Player {
   static readonly ACTIONS_PER_TURN = 5;
   actionsLeft: number = Player.ACTIONS_PER_TURN;
   game?: Game;
   actionLog: PlayerActionLogEntry[] = [];
+  OpportunityHistory: OpportunityHistoryEntry[] = [];
 
   /**
    * Resets the available actions to the turn limit.
@@ -117,6 +125,7 @@ export class Player {
     this.actionsLeft = Player.ACTIONS_PER_TURN;
     this.aggressivity = Math.floor(Math.random() * 8) + 2;
     this.AI = new AI(this, undefined as any); // Game will be set later
+    this.OpportunityHistory = [];
   }
 
   /**
