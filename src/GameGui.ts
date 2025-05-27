@@ -626,7 +626,7 @@ export class GameGui {
     wrapper.style.top = '0';
     wrapper.style.left = '0';
     wrapper.style.width = '100vw';
-    wrapper.style.height = '100vh';
+    wrapper.style.height = (typeof window !== 'undefined' && 'visualViewport' in window) ? '100dvh' : '100vh';
     wrapper.style.background = 'linear-gradient(120deg, #232526 0%, #414345 100%)';
     wrapper.style.borderRadius = '0';
     wrapper.style.boxShadow = 'none';
@@ -1421,6 +1421,7 @@ export class GameGui {
     sidebar.style.boxSizing = 'border-box';
     sidebar.style.fontFamily = "'MedievalSharp', 'Times New Roman', serif";
     sidebar.style.fontSize = '1.2vw'; // Responsive font size
+    sidebar.style.overflowY = 'auto'; // Allow scrolling if content overflows
 
     // Assemble
     wrapper.appendChild(mapArea);
