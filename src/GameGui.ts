@@ -1176,7 +1176,7 @@ export class GameGui {
     const gameInfo = document.createElement('div');
     gameInfo.style.marginBottom = '3.56%'; // 32px/900px
     const turnInfo = document.createElement('div');
-    turnInfo.style.fontSize = '1.2rem';
+    turnInfo.style.fontSize = '1.2vw'; // Responsive font size
     turnInfo.style.fontWeight = 'bold';
     if (game && game.players && game.players.length > 0) {
       const activePlayer = game.activePlayer;
@@ -1234,10 +1234,11 @@ export class GameGui {
         }
         const colorDot = document.createElement('span');
         colorDot.style.display = 'inline-block';
-        colorDot.style.width = '4%'; // 16px/400px
-        colorDot.style.height = '4%'; // 16px/400px
+        colorDot.style.width = '8%'; // Proportional to sidebar width
+        colorDot.style.aspectRatio = '1 / 1'; // Ensures roundness
+        colorDot.style.height = 'auto'; // Let aspect-ratio control height
         colorDot.style.borderRadius = '50%';
-        colorDot.style.background = player.color;
+        colorDot.style.background = `radial-gradient(circle, ${player.color} 60%, transparent 100%)`;
         colorDot.style.marginRight = '2%'; // 8px/400px
         li.appendChild(colorDot);
         const nameSpan = document.createElement('span');
@@ -1247,15 +1248,17 @@ export class GameGui {
         // If player has a money property, show it
         if (typeof player.money === 'number') {
           const moneySpan = document.createElement('span');
-          moneySpan.textContent = `💰 ${player.money}`;
+          // Show money in units of 100k (e.g., 100000 -> 100k)
+          const moneyIn100k = Math.round(player.money / 1000) / 100;
+          moneySpan.textContent = `💰 ${moneyIn100k}k`;
           moneySpan.style.marginLeft = '2%'; // 8px/400px
           li.appendChild(moneySpan);
 
           // --- Progress bar for income share ---
-          const progressBarContainer = document.createElement('span');
+          const progressBarContainer = document.createElement('div');
           progressBarContainer.style.display = 'inline-block';
           progressBarContainer.style.width = '13.5%'; // 54px/400px
-          progressBarContainer.style.height = '1.33%'; // 12px/900px
+          progressBarContainer.style.height = '1em'; // Always visible and proportional
           progressBarContainer.style.marginLeft = '2%'; // 8px/400px
           progressBarContainer.style.verticalAlign = 'middle';
           progressBarContainer.style.background = '#222';
@@ -1263,9 +1266,9 @@ export class GameGui {
           progressBarContainer.style.borderRadius = '1.5%'; // 6px/400px
           progressBarContainer.style.overflow = 'hidden';
 
-          const fill = document.createElement('span');
+          const fill = document.createElement('div');
           const share = Math.min(player.IncomeShare / Game.INCOME_SHARE_WIN, 1);
-          fill.style.display = 'inline-block';
+          fill.style.display = 'block';
           fill.style.height = '100%';
           fill.style.width = `${Math.round(share * 100)}%`;
           fill.style.background = share >= 1 ? 'linear-gradient(90deg,#43cea2,#ffd700)' : 'linear-gradient(90deg,#43cea2,#185a9d)';
@@ -1368,7 +1371,7 @@ export class GameGui {
     endTurnBtn.textContent = 'End Turn';
     endTurnBtn.classList.add('persistent-action-btn');
     endTurnBtn.style.padding = '1.33% 0'; // 12px/900px
-    endTurnBtn.style.fontSize = '1.1rem';
+    endTurnBtn.style.fontSize = '1.2vw'; // Responsive font size
     endTurnBtn.style.background = 'linear-gradient(90deg,#43cea2 0%,#185a9d 100%)';
     endTurnBtn.style.color = '#fff';
     endTurnBtn.style.border = 'none';
@@ -1417,6 +1420,7 @@ export class GameGui {
     sidebar.style.color = '#fff';
     sidebar.style.boxSizing = 'border-box';
     sidebar.style.fontFamily = "'MedievalSharp', 'Times New Roman', serif";
+    sidebar.style.fontSize = '1.2vw'; // Responsive font size
 
     // Assemble
     wrapper.appendChild(mapArea);
