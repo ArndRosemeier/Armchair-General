@@ -160,8 +160,8 @@ export class GameGui {
           infoPanel.innerHTML = `
             <div><b>Name:</b> <span style="${nameStyle}">${info.name}</span></div>
             <div><b>Owner:</b> ${info.owner ? info.owner.name : 'None'}</div>
-            <div><b>Income:</b> <span style="${incomeStyle}">${info.income !== undefined ? info.income : '?'}</span></div>
-            <div><b>Income Potential:</b> <span>${clickedCountry.IncomePotential !== undefined ? clickedCountry.IncomePotential : '?'}</span></div>
+            <div><b>Income:</b> <span style="${incomeStyle}">${info.income !== undefined ? info.income : '?'} </span></div>
+            ${this.currentGame && this.currentGame.InvestEnabled ? `<div><b>Income Potential:</b> <span>${clickedCountry.IncomePotential !== undefined ? clickedCountry.IncomePotential : '?'}</span></div>` : ''}
             <div><b>Army:</b> ${info.army !== undefined ? info.army : '?'}</div>
           `;
         }
@@ -200,8 +200,8 @@ export class GameGui {
             infoPanel.innerHTML = `
               <div><b>Name:</b> <span style="${nameStyle}">${info.name}</span></div>
               <div><b>Owner:</b> ${info.owner ? info.owner.name : 'None'}</div>
-              <div><b>Income:</b> <span style="${incomeStyle}">${info.income !== undefined ? info.income : '?'}</span></div>
-              <div><b>Income Potential:</b> <span>${clickedCountry.IncomePotential !== undefined ? clickedCountry.IncomePotential : '?'}</span></div>
+              <div><b>Income:</b> <span style="${incomeStyle}">${info.income !== undefined ? info.income : '?'} </span></div>
+              ${this.currentGame && this.currentGame.InvestEnabled ? `<div><b>Income Potential:</b> <span>${clickedCountry.IncomePotential !== undefined ? clickedCountry.IncomePotential : '?'}</span></div>` : ''}
               <div><b>Army:</b> ${info.army !== undefined ? info.army : '?'}</div>
             `;
           }
@@ -796,8 +796,8 @@ export class GameGui {
               mapOverlayPanel.innerHTML = `
                 <div><b>Name:</b> <span style="${nameStyle}">${info.name}</span></div>
                 <div><b>Owner:</b> ${info.owner ? info.owner.name : 'None'}</div>
-                <div><b>Income:</b> <span style="${incomeStyle}">${info.income !== undefined ? info.income : '?'}</span></div>
-                <div><b>Income Potential:</b> <span>${clickedCountry.IncomePotential !== undefined ? clickedCountry.IncomePotential : '?'}</span></div>
+                <div><b>Income:</b> <span style="${incomeStyle}">${info.income !== undefined ? info.income : '?'} </span></div>
+                ${this.currentGame && this.currentGame.InvestEnabled ? `<div><b>Income Potential:</b> <span>${clickedCountry.IncomePotential !== undefined ? clickedCountry.IncomePotential : '?'}</span></div>` : ''}
                 <div><b>Army:</b> ${info.army !== undefined ? info.army : '?'}</div>
               `;
               // Position overlay above the country center

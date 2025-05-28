@@ -24,6 +24,7 @@ export class Game {
   activePlayerIndex: number;
   gui?: GameGui;
   advisedOpportunity: Opportunity | null;
+  InvestEnabled: boolean = false;
 
   constructor(worldMap: WorldMap, players: Player[] = []) {
     this.worldMap = worldMap;
@@ -31,6 +32,7 @@ export class Game {
     this.gameTurn = 1;
     this.activePlayerIndex = 0;
     this.advisedOpportunity = null;
+    this.InvestEnabled = false;
     // Start the first player's turn
     if (this.players.length > 0) {
       this.activePlayer.startTurn();
