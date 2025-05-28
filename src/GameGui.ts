@@ -164,6 +164,9 @@ export class GameGui {
             ${this.currentGame && this.currentGame.InvestEnabled ? `<div><b>Income Potential:</b> <span>${clickedCountry.IncomePotential !== undefined ? clickedCountry.IncomePotential : '?'}</span></div>` : ''}
             <div><b>Army:</b> ${info.army !== undefined ? info.army : '?'}</div>
           `;
+          if (info.owner && typeof info.owner.money === 'number') {
+            infoPanel.innerHTML += `<div><b>Owner Money:</b> ${GameGui.formatMoneyK(info.owner.money)}</div>`;
+          }
         }
       }
     }
@@ -180,9 +183,9 @@ export class GameGui {
           const info = this.currentGame.activePlayer.getCountryInfo(clickedCountry, this.currentGame.gameTurn);
           const infoPanel = document.getElementById('country-info-panel');
           if (infoPanel) {
-            const nameStyle = clickedCountry.unrestLevel > 0 ? 'color: red; font-style: italic;' : '';
-            const unrestText = clickedCountry.unrestLevel > 0 ? `<div style="color: red; font-style: italic;">Rioting</div>` : '';
-            const incomeStyle = clickedCountry.unrestLevel > 0 ? 'color: red; text-decoration: line-through;' : '';
+            const nameStyle = clickedCountry.unrestLevel > 0 ? 'color: #ff6666; font-style: italic;' : '';
+            const unrestText = clickedCountry.unrestLevel > 0 ? `<div style=\"color: #ff6666; font-style: italic;\">Rioting</div>` : '';
+            const incomeStyle = clickedCountry.unrestLevel > 0 ? 'color: #ff6666; text-decoration: line-through;' : '';
             // Information status string (no 'Recency:' label)
             let infoStatusHtml = '';
             const player = this.currentGame.activePlayer;
@@ -204,6 +207,9 @@ export class GameGui {
               ${this.currentGame && this.currentGame.InvestEnabled ? `<div><b>Income Potential:</b> <span>${clickedCountry.IncomePotential !== undefined ? clickedCountry.IncomePotential : '?'}</span></div>` : ''}
               <div><b>Army:</b> ${info.army !== undefined ? info.army : '?'}</div>
             `;
+            if (info.owner && typeof info.owner.money === 'number') {
+              infoPanel.innerHTML += `<div><b>Owner Money:</b> ${GameGui.formatMoneyK(info.owner.money)}</div>`;
+            }
           }
         }
         // --- Show country info overlay and action panel for the last used country (simulate click) ---
@@ -800,6 +806,9 @@ export class GameGui {
                 ${this.currentGame && this.currentGame.InvestEnabled ? `<div><b>Income Potential:</b> <span>${clickedCountry.IncomePotential !== undefined ? clickedCountry.IncomePotential : '?'}</span></div>` : ''}
                 <div><b>Army:</b> ${info.army !== undefined ? info.army : '?'}</div>
               `;
+              if (info.owner && typeof info.owner.money === 'number') {
+                mapOverlayPanel.innerHTML += `<div><b>Owner Money:</b> ${GameGui.formatMoneyK(info.owner.money)}</div>`;
+              }
               // Position overlay above the country center
               const [cx, cy] = clickedCountry.center ? clickedCountry.center() : [0, 0];
               // Convert map coords to canvas pixel coords
@@ -1224,46 +1233,46 @@ export class GameGui {
         const li = document.createElement('li');
         li.style.display = 'flex';
         li.style.alignItems = 'center';
-        li.style.marginBottom = '0.89%'; // 8px/900px
+        li.style.marginBottom = '0.67%'; // 6px/900px, reduced by 25%
         // Highlight the active player with a glowy box
         if (player === game.activePlayer) {
-          li.style.boxShadow = '0 0 16px 4px #ffd700, 0 0 4px 2px #fff';
-          li.style.border = '2px solid #ffd700';
-          li.style.borderRadius = '3%'; // 12px/400px
+          li.style.boxShadow = '0 0 12px 3px #ffd700, 0 0 3px 1.5px #fff'; // 25% less
+          li.style.border = '1.5px solid #ffd700';
+          li.style.borderRadius = '2.25%'; // 9px/400px
           li.style.background = 'rgba(255, 215, 0, 0.10)';
         }
         const colorDot = document.createElement('span');
         colorDot.style.display = 'inline-block';
-        colorDot.style.width = '8%'; // Proportional to sidebar width
+        colorDot.style.width = '6%'; // Reduced from 8%
         colorDot.style.aspectRatio = '1 / 1'; // Ensures roundness
         colorDot.style.height = 'auto'; // Let aspect-ratio control height
         colorDot.style.borderRadius = '50%';
         colorDot.style.background = `radial-gradient(circle, ${player.color} 60%, transparent 100%)`;
-        colorDot.style.marginRight = '2%'; // 8px/400px
+        colorDot.style.marginRight = '1.5%'; // 6px/400px, reduced by 25%
         li.appendChild(colorDot);
         const nameSpan = document.createElement('span');
         nameSpan.textContent = player.name + (player.isAI ? ' (AI)' : '');
         nameSpan.style.flex = '1';
+        nameSpan.style.fontSize = '0.9em'; // 75% of default
         li.appendChild(nameSpan);
         // If player has a money property, show it
         if (typeof player.money === 'number') {
           const moneySpan = document.createElement('span');
-          // Show money in units of 100k (e.g., 100000 -> 100k)
-          const moneyIn100k = Math.round(player.money / 1000) / 100;
-          moneySpan.textContent = `💰 ${moneyIn100k}k`;
-          moneySpan.style.marginLeft = '2%'; // 8px/400px
+          moneySpan.textContent = `💰 ${GameGui.formatMoneyK(player.money)}`;
+          moneySpan.style.marginLeft = '1.5%'; // 6px/400px, reduced by 25%
+          moneySpan.style.fontSize = '0.9em'; // Match name font size
           li.appendChild(moneySpan);
 
           // --- Progress bar for income share ---
           const progressBarContainer = document.createElement('div');
           progressBarContainer.style.display = 'inline-block';
-          progressBarContainer.style.width = '13.5%'; // 54px/400px
-          progressBarContainer.style.height = '1em'; // Always visible and proportional
-          progressBarContainer.style.marginLeft = '2%'; // 8px/400px
+          progressBarContainer.style.width = '10%'; // 25% less than 13.5%
+          progressBarContainer.style.height = '0.75em'; // 25% less than 1em
+          progressBarContainer.style.marginLeft = '1.5%'; // 6px/400px, reduced by 25%
           progressBarContainer.style.verticalAlign = 'middle';
           progressBarContainer.style.background = '#222';
-          progressBarContainer.style.border = '1px solid #444';
-          progressBarContainer.style.borderRadius = '1.5%'; // 6px/400px
+          progressBarContainer.style.border = '0.75px solid #444'; // 25% less
+          progressBarContainer.style.borderRadius = '1.1%'; // 4.5px/400px
           progressBarContainer.style.overflow = 'hidden';
 
           const fill = document.createElement('div');
@@ -1489,4 +1498,8 @@ export class GameGui {
   public isProcessingAdvisorSynthetic: boolean = false;
 
   public isAdvisorAnimationRunning: boolean = false;
+
+  static formatMoneyK(money: number): string {
+    return Math.floor(money / 1000) + 'k';
+  }
 }
