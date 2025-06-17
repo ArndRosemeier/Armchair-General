@@ -442,6 +442,27 @@ export class GameGui {
             actionOverlayPanel!.style.flexWrap = 'wrap';
             actionOverlayPanel!.style.maxWidth = '340px';
             actionOverlayPanel!.style.minHeight = 'unset';
+
+            // --- Ensure combined popups fit within viewport ---
+            (function adjustCombinedPosition() {
+              const padding = 8;
+              const winH = window.innerHeight;
+              const infoPanel = infoOverlay; // same element in this scope
+              const actionPanel = actionOverlayPanel;
+              if (!infoPanel || !actionPanel) return;
+              let infoTop = infoPanel.offsetTop;
+              const combinedHeight = infoPanel.offsetHeight + 2 + actionPanel.offsetHeight;
+              const overflowBottom = infoTop + combinedHeight - (winH - padding);
+              if (overflowBottom > 0) {
+                infoTop = Math.max(padding, infoTop - overflowBottom);
+                infoPanel.style.top = `${infoTop}px`;
+                actionPanel.style.top = `${infoTop + infoPanel.offsetHeight + 2}px`;
+              }
+              if (infoTop < padding) {
+                infoPanel.style.top = `${padding}px`;
+                actionPanel.style.top = `${padding + infoPanel.offsetHeight + 2}px`;
+              }
+            })();
           });
         } else {
           // Fallback: just use country center
@@ -820,11 +841,47 @@ export class GameGui {
               const px = cx * scaleX;
               const py = cy * scaleY;
               // Offset overlay above the country center
-              mapOverlayPanel.style.left = `${px - mapOverlayPanel.offsetWidth / 2}px`;
-              mapOverlayPanel.style.top = `${py - mapOverlayPanel.offsetHeight - 18}px`;
+              let left = px - mapOverlayPanel.offsetWidth / 2;
+              let top = py - mapOverlayPanel.offsetHeight - 18;
+              // --- Keep popup within window bounds ---
+              const padding = 8; // px, to avoid touching the edge
+              const winW = window.innerWidth;
+              const winH = window.innerHeight;
+              // Clamp left
+              if (left < padding) left = padding;
+              if (left + mapOverlayPanel.offsetWidth > winW - padding) {
+                left = winW - mapOverlayPanel.offsetWidth - padding;
+              }
+              // Clamp top
+              if (top < padding) top = padding;
+              if (top + mapOverlayPanel.offsetHeight > winH - padding) {
+                top = winH - mapOverlayPanel.offsetHeight - padding;
+              }
+              mapOverlayPanel.style.left = `${left}px`;
+              mapOverlayPanel.style.top = `${top}px`;
               mapOverlayPanel.style.display = 'block';
+              // --- Popup fade-out logic ---
+              const panelWithTimers = mapOverlayPanel as HTMLDivElement & { _fadeTimeout?: any, _fadeHideTimeout?: any };
+              if (panelWithTimers._fadeTimeout) {
+                clearTimeout(panelWithTimers._fadeTimeout);
+                panelWithTimers._fadeTimeout = null;
+              }
+              if (panelWithTimers._fadeHideTimeout) {
+                clearTimeout(panelWithTimers._fadeHideTimeout);
+                panelWithTimers._fadeHideTimeout = null;
+              }
+              mapOverlayPanel.style.transition = 'opacity 1s';
+              mapOverlayPanel.style.opacity = '1';
+              // Set timeout to fade out after 5 seconds
+              panelWithTimers._fadeTimeout = setTimeout(() => {
+                mapOverlayPanel.style.opacity = '0';
+                // After fade, hide the panel
+                panelWithTimers._fadeHideTimeout = setTimeout(() => {
+                  mapOverlayPanel.style.display = 'none';
+                }, 1000);
+              }, 5000);
 
-              // --- Floating action panel logic moved here ---
+              // --- Floating action panel logic (restored) ---
               requestAnimationFrame(() => {
                 // Remove old floating action panel if it exists
                 const mapArea = document.querySelector('div[style*="flex: 3"]');
@@ -979,6 +1036,29 @@ export class GameGui {
                   actionOverlayPanel!.style.flexWrap = 'wrap';
                   actionOverlayPanel!.style.maxWidth = '340px';
                   actionOverlayPanel!.style.minHeight = 'unset';
+
+                  // --- Popup fade-out logic for action panel ---
+                  if (actionOverlayPanel) {
+                    const actionPanelWithTimers = actionOverlayPanel as HTMLDivElement & { _fadeTimeout?: any, _fadeHideTimeout?: any };
+                    if (actionPanelWithTimers._fadeTimeout) {
+                      clearTimeout(actionPanelWithTimers._fadeTimeout);
+                      actionPanelWithTimers._fadeTimeout = null;
+                    }
+                    if (actionPanelWithTimers._fadeHideTimeout) {
+                      clearTimeout(actionPanelWithTimers._fadeHideTimeout);
+                      actionPanelWithTimers._fadeHideTimeout = null;
+                    }
+                    actionOverlayPanel.style.transition = 'opacity 1s';
+                    actionOverlayPanel.style.opacity = '1';
+                    // Set timeout to fade out after 5 seconds
+                    actionPanelWithTimers._fadeTimeout = setTimeout(() => {
+                      actionOverlayPanel.style.opacity = '0';
+                      // After fade, hide the panel
+                      actionPanelWithTimers._fadeHideTimeout = setTimeout(() => {
+                        actionOverlayPanel.style.display = 'none';
+                      }, 1000);
+                    }, 5000);
+                  }
                 }
               });
             }
